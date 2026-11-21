@@ -1,0 +1,190 @@
+/* =========================================================================
+   VOXEL SOKOBAN 3D - STYLESHEET
+   ========================================================================= */
+
+/* 1. CSS Variables & Base Reset */
+:root {
+  --bg-top: #0f172a;
+  --bg-bottom: #1e293b;
+  --accent: #38bdf8;
+  --gold: #fbbf24;
+  --emerald: #34d399;
+}
+
+* {
+  box-sizing: border-box;
+  -webkit-tap-highlight-color: transparent;
+  user-select: none;
+  -webkit-user-select: none;
+}
+
+html, body {
+  margin: 0;
+  padding: 0;
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+  background: radial-gradient(circle at 50% 20%, #1e293b 0%, #0f172a 70%, #020617 100%);
+  font-family: 'Outfit', system-ui, -apple-system, sans-serif;
+  color: #f8fafc;
+  touch-action: none;
+  overscroll-behavior: none;
+}
+
+/* 2. Fullscreen 3D Canvas Container */
+#canvas-container {
+  position: fixed;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  z-index: 1;
+}
+
+canvas {
+  display: block;
+  width: 100%;
+  height: 100%;
+  touch-action: none;
+}
+
+/* 3. Glassmorphic UI Panels & Tactile Arcade Buttons */
+.glass-panel {
+  background: rgba(15, 23, 42, 0.72);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  box-shadow: 0 10px 30px -5px rgba(0, 0, 0, 0.45), inset 0 1px 0 rgba(255, 255, 255, 0.1);
+}
+
+.game-btn {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: linear-gradient(180deg, rgba(51, 65, 85, 0.92) 0%, rgba(30, 41, 59, 0.96) 100%);
+  border: 1px solid rgba(255, 255, 255, 0.16);
+  box-shadow: 0 4px 0 #0f172a, 0 8px 16px rgba(0, 0, 0, 0.35), inset 0 1px 0 rgba(255, 255, 255, 0.2);
+  transition: transform 0.08s ease, box-shadow 0.08s ease, background 0.15s ease;
+  cursor: pointer;
+}
+
+.game-btn:hover {
+  background: linear-gradient(180deg, rgba(71, 85, 105, 0.95) 0%, rgba(30, 41, 59, 0.98) 100%);
+}
+
+.game-btn:active, .game-btn.pressed {
+  transform: translateY(3px);
+  box-shadow: 0 1px 0 #0f172a, 0 2px 6px rgba(0, 0, 0, 0.4), inset 0 1px 0 rgba(255, 255, 255, 0.15);
+}
+
+.game-btn-primary {
+  background: linear-gradient(180deg, #38bdf8 0%, #0284c7 100%);
+  border-color: rgba(186, 230, 253, 0.5);
+  box-shadow: 0 4px 0 #0369a1, 0 8px 20px rgba(14, 165, 233, 0.35), inset 0 1px 0 rgba(255, 255, 255, 0.4);
+  color: #082f49;
+}
+
+.game-btn-primary:hover {
+  background: linear-gradient(180deg, #7dd3fc 0%, #0ea5e9 100%);
+}
+
+.game-btn-primary:active {
+  transform: translateY(3px);
+  box-shadow: 0 1px 0 #0369a1, 0 3px 10px rgba(14, 165, 233, 0.35);
+}
+
+.game-btn-emerald {
+  background: linear-gradient(180deg, #34d399 0%, #059669 100%);
+  border-color: rgba(167, 243, 208, 0.5);
+  box-shadow: 0 4px 0 #065f46, 0 8px 20px rgba(16, 185, 129, 0.35), inset 0 1px 0 rgba(255, 255, 255, 0.4);
+  color: #022c22;
+}
+
+.game-btn-emerald:hover {
+  background: linear-gradient(180deg, #6ee7b7 0%, #10b981 100%);
+}
+
+.game-btn-emerald:active {
+  transform: translateY(3px);
+  box-shadow: 0 1px 0 #065f46;
+}
+
+/* 4. D-Pad Sizing & Typography */
+.dpad-btn {
+  width: 56px;
+  height: 56px;
+  border-radius: 16px;
+}
+
+@media (max-width: 400px) {
+  .dpad-btn {
+    width: 48px;
+    height: 48px;
+    border-radius: 14px;
+  }
+}
+
+.mono {
+  font-family: 'JetBrains Mono', monospace;
+}
+
+/* 5. Modal Transitions */
+.modal-backdrop {
+  transition: opacity 0.25s ease;
+}
+
+.modal-card {
+  transition: transform 0.28s cubic-bezier(0.34, 1.56, 0.64, 1), opacity 0.25s ease;
+}
+
+.modal-hidden {
+  opacity: 0;
+  pointer-events: none;
+}
+
+.modal-hidden .modal-card {
+  transform: scale(0.9) translateY(16px);
+  opacity: 0;
+}
+
+/* 6. Star Rating Glow, Locked Level & Toggle Switch */
+.star-filled {
+  color: #fbbf24;
+  filter: drop-shadow(0 0 6px rgba(251, 191, 36, 0.55));
+}
+
+.star-empty {
+  color: rgba(148, 163, 184, 0.3);
+}
+
+.level-locked {
+  opacity: 0.58;
+  filter: grayscale(0.35);
+}
+
+.toggle-track {
+  width: 46px;
+  height: 26px;
+  border-radius: 999px;
+  background: #334155;
+  padding: 3px;
+  transition: background 0.2s ease;
+  cursor: pointer;
+}
+
+.toggle-track.on {
+  background: #0ea5e9;
+}
+
+.toggle-thumb {
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  background: #f8fafc;
+  transition: transform 0.2s ease;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+}
+
+.toggle-track.on .toggle-thumb {
+  transform: translateX(20px);
+}
