@@ -17,6 +17,16 @@
     SCORE_PAR_MULT: 1.8,
     SCORE_EFFICIENCY_STEP: 20,
     STORAGE_KEY: 'voxel_sokoban_save_v2',
-    STORAGE_KEY_V1: 'voxel_sokoban_done_v1'
+    STORAGE_KEY_V1: 'voxel_sokoban_done_v1',
+    ADAPTER: 'mock',
+    COIN_FIRST_CLEAR: 25,
+    COIN_PER_STAR: 15,
+    COIN_REWARDED_SHOP_GRANT: 50,
+    COIN_SHOP_AD_COOLDOWN_SEC: 60,
+    COIN_PRO_WELCOME_BONUS: 500,
+    INTERSTITIAL_GRACE_CLEARS: 3,
+    INTERSTITIAL_LEVEL_INTERVAL: 3,
+    INTERSTITIAL_COOLDOWN_SEC: 120,
+    PRO_PRODUCT_ID: 'pro_unlock'
   });
 })(window);

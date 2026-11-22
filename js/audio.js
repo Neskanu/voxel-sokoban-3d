@@ -6,10 +6,17 @@
   class SoundEngine {
     constructor() {
       this.enabled = true;
+      this.adMuted = false;
       this.initialized = false;
       this.stepSynth = null;
       this.pushSynth = null;
       this.chimeSynth = null;
+    }
+
+    syncMute() {
+      if (this.initialized && typeof global.Tone !== 'undefined' && global.Tone.Destination) {
+        global.Tone.Destination.mute = this.adMuted || !this.enabled;
+      }
     }
 
     async unlock() {
@@ -37,6 +44,7 @@
         this.chimeSynth.volume.value = -10;
 
         this.initialized = true;
+        this.syncMute();
       } catch (err) {
         console.warn('Audio unlock deferred:', err);
       }
@@ -44,35 +52,45 @@
 
     setEnabled(val) {
       this.enabled = Boolean(val);
+      this.syncMute();
+    }
+
+    setAdMuted(val) {
+      this.adMuted = Boolean(val);
+      this.syncMute();
     }
 
     isEnabled() {
       return this.enabled;
     }
 
+    canPlay() {
+      return this.enabled && !this.adMuted && this.initialized;
+    }
+
     playStep() {
-      if (!this.enabled || !this.initialized) return;
+      if (!this.canPlay()) return;
       try {
         this.stepSynth.triggerAttackRelease('C3', '32n');
       } catch (e) {}
     }
 
     playPush() {
-      if (!this.enabled || !this.initialized) return;
+      if (!this.canPlay()) return;
       try {
         this.pushSynth.triggerAttackRelease('G2', '16n');
       } catch (e) {}
     }
 
     playBump() {
-      if (!this.enabled || !this.initialized) return;
+      if (!this.canPlay()) return;
       try {
         this.stepSynth.triggerAttackRelease('E2', '32n');
       } catch (e) {}
     }
 
     playGoalLock() {
-      if (!this.enabled || !this.initialized || typeof global.Tone === 'undefined') return;
+      if (!this.canPlay() || typeof global.Tone === 'undefined') return;
       try {
         const now = global.Tone.now();
         this.chimeSynth.triggerAttackRelease('E5', '16n', now);
@@ -82,14 +100,33 @@
     }
 
     playUndo() {
-      if (!this.enabled || !this.initialized) return;
+      if (!this.canPlay()) return;
       try {
         this.chimeSynth.triggerAttackRelease('D4', '32n');
       } catch (e) {}
     }
 
+    playCoin() {
+      if (!this.canPlay() || typeof global.Tone === 'undefined') return;
+      try {
+        const now = global.Tone.now();
+        this.chimeSynth.triggerAttackRelease('G5', '16n', now);
+        this.chimeSynth.triggerAttackRelease('C6', '8n', now + 0.07);
+      } catch (e) {}
+    }
+
+    playUnlock() {
+      if (!this.canPlay() || typeof global.Tone === 'undefined') return;
+      try {
+        const now = global.Tone.now();
+        ['E5', 'A5', 'C#6'].forEach((note, idx) => {
+          this.chimeSynth.triggerAttackRelease(note, '8n', now + idx * 0.07);
+        });
+      } catch (e) {}
+    }
+
     playWin() {
-      if (!this.enabled || !this.initialized || typeof global.Tone === 'undefined') return;
+      if (!this.canPlay() || typeof global.Tone === 'undefined') return;
       try {
         const now = global.Tone.now();
         ['C5', 'E5', 'G5', 'C6'].forEach((note, idx) => {

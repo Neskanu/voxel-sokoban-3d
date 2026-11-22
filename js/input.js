@@ -227,10 +227,25 @@
       VS.UI.openLevelSelectForCurrentPack();
     });
 
+    byId('btn-hud-shop').addEventListener('click', () => {
+      VS.Sound.unlock();
+      VS.UI.openShop();
+    });
+
     // --- Main Menu ---
     byId('btn-menu-play').addEventListener('click', () => {
       VS.Sound.unlock();
       VS.UI.closeMainMenu();
+    });
+
+    byId('btn-menu-shop').addEventListener('click', () => {
+      VS.Sound.unlock();
+      VS.UI.openShop();
+    });
+
+    byId('btn-menu-pro').addEventListener('click', () => {
+      VS.Sound.unlock();
+      VS.UI.openProModal();
     });
 
     byId('btn-menu-levels').addEventListener('click', () => {
@@ -269,6 +284,52 @@
       VS.UI.applySettings();
     });
 
+    byId('btn-restore-purchases').addEventListener('click', async () => {
+      VS.Sound.unlock();
+      const statusEl = byId('restore-status');
+      if (!VS.Monetization) return;
+      const res = await VS.Monetization.restorePurchases();
+      if (statusEl) {
+        statusEl.textContent = res.ok ? 'Purchases restored!' : 'No previous purchases found.';
+      }
+    });
+
+    byId('btn-dev-toggle-pro').addEventListener('click', () => {
+      if (!VS.Monetization) return;
+      const nowPro = VS.Monetization.devTogglePro();
+      const note = byId('dev-monetization-note');
+      if (note) note.textContent = `Mock Pro is now ${nowPro ? 'ENABLED' : 'DISABLED'}.`;
+    });
+
+    byId('btn-dev-add-coins').addEventListener('click', () => {
+      if (!VS.Monetization) return;
+      const total = VS.Monetization.devAddCoins(500);
+      const note = byId('dev-monetization-note');
+      if (note) note.textContent = `Added +500 coins (Balance: ${total}).`;
+    });
+
+    byId('btn-dev-reset-cooldowns').addEventListener('click', () => {
+      if (!VS.Monetization) return;
+      VS.Monetization.devResetCooldowns();
+      const note = byId('dev-monetization-note');
+      if (note) note.textContent = 'Ad cooldowns reset (interstitial armed).';
+    });
+
+    byId('btn-dev-reset-economy').addEventListener('click', () => {
+      if (!VS.Monetization) return;
+      VS.Monetization.devResetMockEconomy();
+      const note = byId('dev-monetization-note');
+      if (note) note.textContent = 'Mock purchases, packs & coins reset.';
+    });
+
+    byId('toggle-dev-ad-fail').addEventListener('click', () => {
+      if (!VS.Monetization || !VS.MockAdapter) return;
+      const next = !VS.MockAdapter.getSimulateAdFail();
+      VS.Monetization.devSetSimulateAdFail(next);
+      const note = byId('dev-monetization-note');
+      if (note) note.textContent = `Simulate Ad No-Fill: ${next ? 'ON' : 'OFF'}.`;
+    });
+
     byId('btn-reset-progress').addEventListener('click', () => {
       VS.UI.handleResetProgressClick();
     });
@@ -276,12 +337,68 @@
     // --- Level Select & Import Modal ---
     byId('tab-classic').addEventListener('click', () => VS.UI.setActivePackTab('classic'));
     byId('tab-starter').addEventListener('click', () => VS.UI.setActivePackTab('starter'));
+    byId('tab-premium').addEventListener('click', () => VS.UI.setActivePackTab('premium'));
     byId('tab-import').addEventListener('click', () => VS.UI.setActivePackTab('import'));
+    byId('btn-level-lock-action').addEventListener('click', () => {
+      VS.Sound.unlock();
+      VS.UI.triggerCurrentLockAction();
+    });
     byId('btn-parse-xsb').addEventListener('click', () => VS.UI.handleXsbImport());
     byId('btn-close-levels').addEventListener('click', () => VS.UI.hideModal('modal-levels'));
 
+    // --- Shop Modal ---
+    byId('btn-close-shop').addEventListener('click', () => VS.UI.hideModal('modal-shop'));
+    byId('shop-tab-themes').addEventListener('click', () => VS.UI.setShopTab('themes'));
+    byId('shop-tab-bots').addEventListener('click', () => VS.UI.setShopTab('bots'));
+    byId('shop-tab-crates').addEventListener('click', () => VS.UI.setShopTab('crates'));
+    byId('btn-shop-go-pro').addEventListener('click', () => {
+      VS.Sound.unlock();
+      VS.UI.openProModal();
+    });
+    byId('btn-shop-free-coins').addEventListener('click', async () => {
+      VS.Sound.unlock();
+      if (!VS.Monetization) return;
+      const res = await VS.Monetization.claimShopFreeCoins();
+      if (res.ok) {
+        VS.UI.setShopStatus(`+${res.added} Voxel Coins claimed!`, 'text-emerald-300');
+      } else if (res.reason === 'cooldown') {
+        VS.UI.setShopStatus(`Next free coins ad ready in ${res.remainingSec}s.`, 'text-amber-300');
+      } else if (res.reason === 'no_fill') {
+        VS.UI.setShopStatus('Ad unavailable right now — try again shortly.', 'text-rose-300');
+      } else {
+        VS.UI.setShopStatus('Finish the rewarded ad to claim coins.', 'text-amber-300');
+      }
+    });
+
+    // --- Pro Modal ---
+    byId('btn-close-pro').addEventListener('click', () => VS.UI.hideModal('modal-pro'));
+    byId('btn-pro-buy').addEventListener('click', async () => {
+      VS.Sound.unlock();
+      if (!VS.Monetization) return;
+      const statusEl = byId('pro-status');
+      const res = await VS.Monetization.purchasePro();
+      if (statusEl) {
+        if (res.ok) {
+          statusEl.textContent = res.bonusGranted
+            ? `Voxel Sokoban Pro unlocked! +${res.bonusGranted} bonus coins added.`
+            : 'Voxel Sokoban Pro is active!';
+        } else {
+          statusEl.textContent = 'Purchase did not complete.';
+        }
+      }
+    });
+    byId('btn-pro-restore').addEventListener('click', async () => {
+      VS.Sound.unlock();
+      if (!VS.Monetization) return;
+      const statusEl = byId('pro-status');
+      const res = await VS.Monetization.restorePurchases();
+      if (statusEl) {
+        statusEl.textContent = res.ok ? 'Purchases restored!' : 'No previous purchases found.';
+      }
+    });
+
     // --- Backdrop Click-to-Close on Secondary Modals ---
-    ['modal-levels', 'modal-settings'].forEach((modalId) => {
+    ['modal-levels', 'modal-settings', 'modal-shop', 'modal-pro'].forEach((modalId) => {
       const backdrop = byId(modalId);
       if (!backdrop) return;
       backdrop.addEventListener('click', (e) => {
@@ -292,18 +409,48 @@
     });
 
     // --- Victory Modal ---
+    byId('btn-win-double').addEventListener('click', async () => {
+      VS.Sound.unlock();
+      const baseCoins = VS.UI.getPendingWinDoubleCoins();
+      if (!VS.Monetization || !baseCoins) return;
+      const btn = byId('btn-win-double');
+      btn.disabled = true;
+      const res = await VS.Monetization.claimWinDoubleCoins(baseCoins);
+      if (res.ok) {
+        VS.UI.clearPendingWinDoubleCoins();
+        const coinsText = byId('win-coins-text');
+        if (coinsText) coinsText.textContent = `Doubled! +${baseCoins * 2} Voxel Coins`;
+        btn.textContent = '2× Coins Claimed ✓';
+      } else {
+        btn.disabled = false;
+      }
+    });
+
+    byId('btn-win-trial-shop').addEventListener('click', () => {
+      VS.Sound.unlock();
+      VS.UI.hideModal('modal-win');
+      VS.UI.openShop();
+    });
+
     byId('btn-win-replay').addEventListener('click', () => {
       VS.Game.loadLevel(VS.Game.state.levelIndex);
     });
 
-    byId('btn-win-next').addEventListener('click', () => {
+    byId('btn-win-next').addEventListener('click', async () => {
       const nextIdx = (VS.Game.state.levelIndex + 1) % VS.Levels.count();
       const nextLv = VS.Levels.get(nextIdx);
       if (VS.Storage.isLevelUnlocked(nextLv)) {
+        if (VS.Monetization) {
+          await VS.Monetization.maybeShowInterstitial('level_complete');
+        }
         VS.Game.loadLevel(nextIdx);
       } else {
         VS.UI.hideModal('modal-win');
-        VS.UI.setActivePackTab(nextLv.pack === 'starter' ? 'starter' : 'classic');
+        if (nextLv.premiumPackId) {
+          VS.UI.setActivePackTab('premium');
+        } else {
+          VS.UI.setActivePackTab(nextLv.pack === 'starter' ? 'starter' : 'classic');
+        }
         VS.UI.showModal('modal-levels');
       }
     });

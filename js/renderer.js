@@ -9,7 +9,9 @@
   let renderer = null;
   let levelGroup = null;
   let particleGroup = null;
+  let hemiLight = null;
   let dirLight = null;
+  let rimLight = null;
   let raycaster = null;
   let animFrameId = null;
   let lastTime = 0;
@@ -33,7 +35,7 @@
     containerEl.appendChild(renderer.domElement);
 
     // Lighting: Soft Hemisphere + Warm Directional Sunlight + Subtle Rim Light
-    const hemiLight = new THREE.HemisphereLight(0xe0f2fe, 0x1e293b, 0.85);
+    hemiLight = new THREE.HemisphereLight(0xe0f2fe, 0x1e293b, 0.85);
     hemiLight.position.set(0, 20, 0);
     scene.add(hemiLight);
 
@@ -52,7 +54,7 @@
     dirLight.shadow.bias = -0.001;
     scene.add(dirLight);
 
-    const rimLight = new THREE.DirectionalLight(0x38bdf8, 0.4);
+    rimLight = new THREE.DirectionalLight(0x38bdf8, 0.4);
     rimLight.position.set(-10, 8, -10);
     scene.add(rimLight);
 
@@ -285,7 +287,8 @@
         }
 
         if (ch === '@' || ch === '+') {
-          const playerMesh = Voxels.buildPlayerVoxel();
+          const accessory = VS.Cosmetics ? VS.Cosmetics.getActiveBotSkin().accessory : 'antenna';
+          const playerMesh = Voxels.buildPlayerVoxel(accessory);
           playerMesh.position.set(pos.x, 0, pos.z);
           levelGroup.add(playerMesh);
           state.player.x = x;
@@ -431,6 +434,47 @@
     renderer.render(scene, camera);
   }
 
+  function applyThemeLighting(theme) {
+    if (!theme) return;
+    const l = theme.lighting;
+    if (l) {
+      if (hemiLight) {
+        hemiLight.color.setHex(l.hemiSky);
+        hemiLight.groundColor.setHex(l.hemiGround);
+        hemiLight.intensity = l.hemiIntensity;
+      }
+      if (dirLight) {
+        dirLight.color.setHex(l.dirColor);
+        dirLight.intensity = l.dirIntensity;
+      }
+      if (rimLight) {
+        rimLight.color.setHex(l.rimColor);
+        rimLight.intensity = l.rimIntensity;
+      }
+    }
+    if (theme.bgGradient && global.document) {
+      global.document.documentElement.style.background = theme.bgGradient;
+      if (global.document.body) {
+        global.document.body.style.background = theme.bgGradient;
+      }
+    }
+  }
+
+  function refreshPlayerMesh(accessory) {
+    const state = VS.Game && VS.Game.state;
+    if (!levelGroup || !state || !state.player || !state.player.mesh) return;
+    const oldMesh = state.player.mesh;
+    const pos = oldMesh.position.clone();
+    const rotY = oldMesh.rotation.y;
+    levelGroup.remove(oldMesh);
+
+    const newMesh = VS.Voxels.buildPlayerVoxel(accessory || 'antenna');
+    newMesh.position.copy(pos);
+    newMesh.rotation.y = rotY;
+    levelGroup.add(newMesh);
+    state.player.mesh = newMesh;
+  }
+
   function startLoop() {
     if (animFrameId !== null) {
       global.cancelAnimationFrame(animFrameId);
@@ -454,6 +498,8 @@
     computePlayableTiles,
     clearBoard,
     buildBoard,
+    applyThemeLighting,
+    refreshPlayerMesh,
     spawnParticles,
     raycastFloor,
     startLoop

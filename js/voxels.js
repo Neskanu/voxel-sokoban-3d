@@ -33,11 +33,45 @@
       playerDark:   new THREE.MeshStandardMaterial({ color: 0x1e293b, roughness: 0.65, metalness: 0.2 }),
       playerPack:   new THREE.MeshStandardMaterial({ color: 0xf59e0b, roughness: 0.55, metalness: 0.1 }),
       playerVisor:  new THREE.MeshStandardMaterial({ color: 0x0f172a, roughness: 0.2, metalness: 0.6 }),
-      playerEye:    new THREE.MeshStandardMaterial({ color: 0x34d399, emissive: 0x34d399, emissiveIntensity: 0.9 })
+      playerEye:    new THREE.MeshStandardMaterial({ color: 0x34d399, emissive: 0x34d399, emissiveIntensity: 0.9 }),
+      playerAccent: new THREE.MeshStandardMaterial({ color: 0x7dd3fc, emissive: 0x38bdf8, emissiveIntensity: 0.7, roughness: 0.25, metalness: 0.3 })
     };
 
     particleGeo = new THREE.BoxGeometry(0.12, 0.12, 0.12);
     VS.Voxels.MAT = MAT;
+  }
+
+  function setMatProps(mat, spec) {
+    if (!mat || !spec) return;
+    if (spec.color !== undefined) mat.color.setHex(spec.color);
+    if (mat.emissive) {
+      mat.emissive.setHex(spec.emissive !== undefined ? spec.emissive : 0x000000);
+      mat.emissiveIntensity = spec.emissiveIntensity !== undefined ? spec.emissiveIntensity : 0;
+    }
+    if (spec.roughness !== undefined) mat.roughness = spec.roughness;
+    if (spec.metalness !== undefined) mat.metalness = spec.metalness;
+    mat.needsUpdate = true;
+  }
+
+  function applyMaterialGroup(specMap) {
+    if (!MAT || !specMap) return;
+    Object.entries(specMap).forEach(([key, spec]) => {
+      if (MAT[key]) {
+        setMatProps(MAT[key], spec);
+      }
+    });
+  }
+
+  function applyThemeMaterials(theme) {
+    if (theme && theme.materials) applyMaterialGroup(theme.materials);
+  }
+
+  function applyBotMaterials(bot) {
+    if (bot && bot.materials) applyMaterialGroup(bot.materials);
+  }
+
+  function applyCrateMaterials(crate) {
+    if (crate && crate.materials) applyMaterialGroup(crate.materials);
   }
 
   function createBox(w, h, d, mat, x = 0, y = 0, z = 0, castShadow = true, receiveShadow = true) {
@@ -121,7 +155,52 @@
     return { group, pad, crystal };
   }
 
-  function buildPlayerVoxel() {
+  function addPlayerAccessory(group, accessory) {
+    if (accessory === 'hardhat') {
+      group.add(createBox(0.50, 0.14, 0.48, MAT.playerAccent, 0, 0.91, 0.01));
+      group.add(createBox(0.44, 0.05, 0.16, MAT.playerAccent, 0, 0.85, 0.24));
+      group.add(createBox(0.14, 0.05, 0.36, MAT.playerAccent, 0, 0.99, 0.01));
+      return;
+    }
+
+    if (accessory === 'cyberfins') {
+      [-0.24, 0.24].forEach((sideX) => {
+        group.add(createBox(0.06, 0.26, 0.18, MAT.playerDark, sideX, 0.78, -0.02));
+        group.add(createBox(0.06, 0.14, 0.10, MAT.playerAccent, sideX, 0.95, -0.05, false, false));
+      });
+      group.add(createBox(0.28, 0.05, 0.10, MAT.playerAccent, 0, 0.90, 0.05, false, false));
+      return;
+    }
+
+    if (accessory === 'cryopack') {
+      [-0.10, 0.10].forEach((sideX) => {
+        group.add(createBox(0.12, 0.32, 0.12, MAT.playerAccent, sideX, 0.39, -0.25));
+        group.add(createBox(0.08, 0.06, 0.08, MAT.playerDark, sideX, 0.57, -0.25));
+      });
+      group.add(createBox(0.36, 0.07, 0.16, MAT.playerAccent, 0, 0.90, 0.02));
+      return;
+    }
+
+    if (accessory === 'crown') {
+      group.add(createBox(0.44, 0.09, 0.42, MAT.playerAccent, 0, 0.92, 0.01));
+      [
+        [-0.14, 1.01, 0.16],
+        [0, 1.03, 0.16],
+        [0.14, 1.01, 0.16],
+        [-0.14, 1.01, -0.14],
+        [0.14, 1.01, -0.14]
+      ].forEach(([px, py, pz]) => {
+        group.add(createBox(0.08, 0.11, 0.08, MAT.playerAccent, px, py, pz));
+      });
+      return;
+    }
+
+    // Default: 'antenna'
+    group.add(createBox(0.05, 0.14, 0.05, MAT.playerDark, 0, 0.94, 0));
+    group.add(createBox(0.10, 0.10, 0.10, MAT.playerAccent, 0, 1.03, 0, false, false));
+  }
+
+  function buildPlayerVoxel(accessory = 'antenna') {
     const group = new global.THREE.Group();
 
     // Feet
@@ -142,9 +221,7 @@
     group.add(createBox(0.08, 0.08, 0.04, MAT.playerEye, -0.09, 0.71, 0.23, false, false));
     group.add(createBox(0.08, 0.08, 0.04, MAT.playerEye, 0.09, 0.71, 0.23, false, false));
 
-    // Antenna
-    group.add(createBox(0.05, 0.14, 0.05, MAT.playerDark, 0, 0.94, 0));
-    group.add(createBox(0.10, 0.10, 0.10, MAT.goalCrystal, 0, 1.03, 0, false, false));
+    addPlayerAccessory(group, accessory);
 
     return group;
   }
@@ -216,6 +293,9 @@
     init,
     MAT: null,
     createBox,
+    applyThemeMaterials,
+    applyBotMaterials,
+    applyCrateMaterials,
     buildWallVoxel,
     buildCrateVoxel,
     buildGoalVoxel,

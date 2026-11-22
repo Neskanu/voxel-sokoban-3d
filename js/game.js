@@ -65,6 +65,9 @@
     if (!level) return;
 
     clearWinTimers();
+    if (VS.Monetization) {
+      VS.Monetization.consumeExpiredTrials();
+    }
 
     state.levelIndex = index;
     state.gridHeight = level.map.length;
@@ -185,7 +188,7 @@
   }
 
   function attemptMove(dx, dy) {
-    if (state.won || state.menuOpen || VS.UI.isAnyModalOpen()) return;
+    if (state.won || state.menuOpen || VS.UI.isAnyModalOpen() || (VS.Monetization && VS.Monetization.isAdActive())) return;
     VS.Sound.unlock();
 
     if (VS.Storage.getSettings().autoFollow) {
@@ -231,12 +234,15 @@
       state.pushes++;
 
       const destWorld = VS.Renderer.gridToWorld(cx, cy);
+      const crateSkin = VS.Cosmetics ? VS.Cosmetics.getActiveCrateSkin() : null;
+      const lockColor = crateSkin ? crateSkin.lockParticleColor : 0x34d399;
+      const pushColor = crateSkin ? crateSkin.pushParticleColor : 0xfbbf24;
       if (state.goals.has(crateKey)) {
         VS.Sound.playGoalLock();
-        VS.Renderer.spawnParticles(destWorld.x, 0.5, destWorld.z, 0x34d399, 14, 0.09);
+        VS.Renderer.spawnParticles(destWorld.x, 0.5, destWorld.z, lockColor, 14, 0.09);
       } else {
         VS.Sound.playPush();
-        VS.Renderer.spawnParticles(destWorld.x, 0.15, destWorld.z, 0xfbbf24, 5, 0.05);
+        VS.Renderer.spawnParticles(destWorld.x, 0.15, destWorld.z, pushColor, 5, 0.05);
       }
     } else {
       pushHistory(null);
@@ -266,7 +272,7 @@
   }
 
   function undoMove() {
-    if (state.history.length === 0 || state.won || state.menuOpen || VS.UI.isAnyModalOpen()) return;
+    if (state.history.length === 0 || state.won || state.menuOpen || VS.UI.isAnyModalOpen() || (VS.Monetization && VS.Monetization.isAdActive())) return;
     VS.Sound.unlock();
 
     if (VS.Storage.getSettings().autoFollow) {
@@ -306,12 +312,16 @@
 
     const lv = VS.Levels.get(state.levelIndex);
     const winStats = VS.Storage.recordWin(lv, state.moves);
+    const trialInfo = VS.Monetization ? VS.Monetization.onLevelWon() : null;
+    if (winStats.stars === 3 && VS.Platform) {
+      VS.Platform.happyTime();
+    }
     VS.UI.updateMenuStats();
     VS.Sound.playWin();
 
     const allLevels = VS.Levels.getAll();
     const newlyUnlocked = allLevels.filter(
-      (l) => (l.unlockStars || 0) > winStats.prevStars && (l.unlockStars || 0) <= winStats.newStars
+      (l) => !l.premiumPackId && (l.unlockStars || 0) > winStats.prevStars && (l.unlockStars || 0) <= winStats.newStars
     );
 
     const pWorld = VS.Renderer.gridToWorld(state.player.x, state.player.y);
@@ -329,7 +339,8 @@
       const totalLevels = VS.Levels.count();
       const isLast = state.levelIndex === totalLevels - 1;
       const nextLv = VS.Levels.get((state.levelIndex + 1) % totalLevels);
-      const nextUnlocked = VS.Storage.isLevelUnlocked(nextLv);
+      const nextLockInfo = VS.Storage.getLevelLockInfo(nextLv);
+      const nextUnlocked = nextLockInfo.unlocked;
 
       VS.UI.showWinModal({
         level: lv,
@@ -338,9 +349,14 @@
         score: winStats.score,
         par: winStats.par,
         newStars: winStats.newStars,
+        baseCoinsEarned: winStats.baseCoinsEarned,
+        coinsEarned: winStats.coinsEarned,
+        proAutoDoubled: winStats.proAutoDoubled,
+        trialInfo,
         isLast,
         nextLevel: nextLv,
         nextUnlocked,
+        nextLockInfo,
         newlyUnlockedCount: newlyUnlocked.length
       });
     }, 420);
@@ -348,7 +364,7 @@
   }
 
   function handleTapTile(clientX, clientY) {
-    if (state.won || state.menuOpen || VS.UI.isAnyModalOpen()) return;
+    if (state.won || state.menuOpen || VS.UI.isAnyModalOpen() || (VS.Monetization && VS.Monetization.isAdActive())) return;
     const hit = VS.Renderer.raycastFloor(clientX, clientY);
     if (!hit) return;
 

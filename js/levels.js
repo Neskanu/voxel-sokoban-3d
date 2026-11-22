@@ -419,7 +419,255 @@
     }
   ];
 
-  let levels = [...CLASSIC_LEVELS, ...STARTER_LEVELS];
+  const PREMIUM_PACKS = {
+    'neon-vault': {
+      id: 'neon-vault',
+      productId: 'pack_neon_vault',
+      name: 'Neon Vault',
+      subtitle: '6 tactical cyber-warehouse puzzles',
+      difficulty: 'Medium-Hard',
+      defaultPrice: '$1.99',
+      fallbackCoinPrice: 450,
+      accent: 'sky'
+    },
+    grandmaster: {
+      id: 'grandmaster',
+      productId: 'pack_grandmaster',
+      name: 'Grandmaster',
+      subtitle: '6 deep multi-stage logic chambers',
+      difficulty: 'Expert',
+      defaultPrice: '$2.99',
+      fallbackCoinPrice: 600,
+      accent: 'amber'
+    }
+  };
+
+  const NEON_VAULT_LEVELS = [
+    {
+      id: 'neon-vault-1',
+      pack: 'neon-vault',
+      premiumPackId: 'neon-vault',
+      freePreview: true,
+      name: 'Circuit Entry',
+      par: 22,
+      unlockStars: 0,
+      map: [
+        '########',
+        '#  .   #',
+        '# #$$# #',
+        '# . @. #',
+        '#  $   #',
+        '#      #',
+        '########'
+      ]
+    },
+    {
+      id: 'neon-vault-2',
+      pack: 'neon-vault',
+      premiumPackId: 'neon-vault',
+      freePreview: false,
+      name: 'Relay Chamber',
+      par: 24,
+      unlockStars: 0,
+      map: [
+        '########',
+        '#  ..  #',
+        '# #$ # #',
+        '#  $@  #',
+        '#  $#  #',
+        '#  .   #',
+        '########'
+      ]
+    },
+    {
+      id: 'neon-vault-3',
+      pack: 'neon-vault',
+      premiumPackId: 'neon-vault',
+      freePreview: false,
+      name: 'Data Spine',
+      par: 26,
+      unlockStars: 0,
+      map: [
+        '#########',
+        '# .   . #',
+        '# #$ $# #',
+        '#   @   #',
+        '# #$ $# #',
+        '# .   . #',
+        '#########'
+      ]
+    },
+    {
+      id: 'neon-vault-4',
+      pack: 'neon-vault',
+      premiumPackId: 'neon-vault',
+      freePreview: false,
+      name: 'Mirror Vault',
+      par: 28,
+      unlockStars: 0,
+      map: [
+        '#########',
+        '#  ...  #',
+        '# # # # #',
+        '#  $$$  #',
+        '#   @   #',
+        '#  # #  #',
+        '#       #',
+        '#########'
+      ]
+    },
+    {
+      id: 'neon-vault-5',
+      pack: 'neon-vault',
+      premiumPackId: 'neon-vault',
+      freePreview: false,
+      name: 'Double Pivot',
+      par: 28,
+      unlockStars: 0,
+      map: [
+        '########',
+        '#  .   #',
+        '# #$ # #',
+        '#  $@$ #',
+        '# # .# #',
+        '#  .   #',
+        '########'
+      ]
+    },
+    {
+      id: 'neon-vault-6',
+      pack: 'neon-vault',
+      premiumPackId: 'neon-vault',
+      freePreview: false,
+      name: 'Laser Bypass',
+      par: 34,
+      unlockStars: 0,
+      map: [
+        '#########',
+        '#   #   #',
+        '# $ . $ #',
+        '# # # # #',
+        '# . @ . #',
+        '#   $   #',
+        '#   #   #',
+        '#########'
+      ]
+    }
+  ];
+
+  const GRANDMASTER_LEVELS = [
+    {
+      id: 'grandmaster-1',
+      pack: 'grandmaster',
+      premiumPackId: 'grandmaster',
+      freePreview: true,
+      name: 'Iron Sluice',
+      par: 30,
+      unlockStars: 0,
+      map: [
+        '#########',
+        '#   #   #',
+        '# $ . $ #',
+        '#  ###  #',
+        '# . @ . #',
+        '#   $   #',
+        '#  #    #',
+        '#########'
+      ]
+    },
+    {
+      id: 'grandmaster-2',
+      pack: 'grandmaster',
+      premiumPackId: 'grandmaster',
+      freePreview: false,
+      name: 'Switchyard',
+      par: 32,
+      unlockStars: 0,
+      map: [
+        '##########',
+        '#   ..   #',
+        '#  #$$#  #',
+        '#  $@ $  #',
+        '#  #..#  #',
+        '#        #',
+        '##########'
+      ]
+    },
+    {
+      id: 'grandmaster-3',
+      pack: 'grandmaster',
+      premiumPackId: 'grandmaster',
+      freePreview: false,
+      name: 'Split Symmetry',
+      par: 38,
+      unlockStars: 0,
+      map: [
+        '########',
+        '# .  . #',
+        '#  $$  #',
+        '# ## # #',
+        '#  @$  #',
+        '#   .  #',
+        '########'
+      ]
+    },
+    {
+      id: 'grandmaster-4',
+      pack: 'grandmaster',
+      premiumPackId: 'grandmaster',
+      freePreview: false,
+      name: 'Citadel Lock',
+      par: 42,
+      unlockStars: 0,
+      map: [
+        '#########',
+        '#  ...  #',
+        '#  # #  #',
+        '# $$@$  #',
+        '#   #   #',
+        '#       #',
+        '#########'
+      ]
+    },
+    {
+      id: 'grandmaster-5',
+      pack: 'grandmaster',
+      premiumPackId: 'grandmaster',
+      freePreview: false,
+      name: 'Obsidian Heart',
+      par: 52,
+      unlockStars: 0,
+      map: [
+        '#########',
+        '#  ...  #',
+        '# #   # #',
+        '#  #$#  #',
+        '#  $@$  #',
+        '#       #',
+        '#########'
+      ]
+    },
+    {
+      id: 'grandmaster-6',
+      pack: 'grandmaster',
+      premiumPackId: 'grandmaster',
+      freePreview: false,
+      name: 'Vault Helix',
+      par: 60,
+      unlockStars: 0,
+      map: [
+        '#########',
+        '# ...   #',
+        '# ### # #',
+        '#   $$  #',
+        '# # $@# #',
+        '#       #',
+        '#########'
+      ]
+    }
+  ];
+
+  let levels = [...CLASSIC_LEVELS, ...STARTER_LEVELS, ...NEON_VAULT_LEVELS, ...GRANDMASTER_LEVELS];
 
   function getAll() {
     return levels;
@@ -439,11 +687,26 @@
     return startIdx;
   }
 
+  function getPremiumPacks() {
+    return Object.values(PREMIUM_PACKS);
+  }
+
+  function getPackMeta(packId) {
+    return PREMIUM_PACKS[packId] || null;
+  }
+
   function getLevelTag(level) {
     if (!level) return '';
     const packLevels = levels.filter((l) => l.pack === level.pack);
     const num = packLevels.findIndex((l) => l.id === level.id) + 1;
-    const prefix = level.pack === 'classic' ? 'C' : (level.pack === 'custom' ? 'X' : 'S');
+    const prefixMap = {
+      classic: 'C',
+      starter: 'S',
+      'neon-vault': 'N',
+      grandmaster: 'G',
+      custom: 'X'
+    };
+    const prefix = prefixMap[level.pack] || 'L';
     return `${prefix}${num}`;
   }
 
@@ -520,6 +783,8 @@
     get,
     count,
     addCustomLevels,
+    getPremiumPacks,
+    getPackMeta,
     getLevelTag,
     parseXsbLevels
   };

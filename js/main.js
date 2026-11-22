@@ -3,7 +3,7 @@
 
   const VS = (global.VoxelSokoban = global.VoxelSokoban || {});
 
-  function bootstrap() {
+  async function bootstrap() {
     try {
       if (typeof global.THREE === 'undefined') {
         throw new Error('Three.js library is not loaded.');
@@ -11,6 +11,9 @@
 
       VS.Voxels.init();
       VS.Renderer.init(global.document.getElementById('canvas-container'));
+      await VS.Platform.init();
+      await VS.Monetization.init();
+      VS.Cosmetics.applyActiveCosmetics({ rebuildPlayer: false });
       VS.UI.init();
       VS.Input.init();
       VS.UI.applySettings();

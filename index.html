@@ -24,10 +24,10 @@
 
   <!-- Top HUD Overlay -->
   <header class="fixed top-0 left-0 right-0 z-20 pointer-events-none p-2.5 sm:p-4">
-    <div class="max-w-3xl mx-auto flex flex-col items-center gap-2">
+    <div class="max-w-4xl mx-auto flex flex-col items-center gap-2">
       <div class="w-full flex flex-wrap sm:flex-nowrap items-center justify-between gap-2">
-        <!-- Home & Level Selector -->
-        <div class="pointer-events-auto flex items-center gap-2 min-w-0 flex-1 sm:flex-initial">
+        <!-- Home, Level Selector & Coin Shop Pill -->
+        <div class="pointer-events-auto flex items-center gap-2 min-w-0 flex-1 sm:flex-initial w-full sm:w-auto">
           <button id="btn-home" class="game-btn rounded-xl w-10 h-10 shrink-0 text-slate-200" title="Main Menu" aria-label="Main Menu">
             <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
               <path stroke-linecap="round" stroke-linejoin="round" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"/>
@@ -46,6 +46,11 @@
                 <svg class="w-3.5 h-3.5 shrink-0 text-slate-400" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7"/></svg>
               </div>
             </div>
+          </button>
+          <button id="btn-hud-shop" class="game-btn rounded-2xl px-2.5 py-2 shrink-0 flex items-center gap-1.5 text-amber-300" title="Open Voxel Shop" aria-label="Open Voxel Shop">
+            <span class="w-4 h-4 rounded-full bg-amber-400 text-amber-950 font-extrabold text-[10px] flex items-center justify-center shadow-inner">V</span>
+            <span id="hud-coins" class="mono text-xs sm:text-sm font-bold text-amber-200">0</span>
+            <span id="hud-pro-badge" class="hidden mono text-[9px] font-extrabold px-1.5 py-0.5 rounded-md bg-amber-400 text-slate-950">PRO</span>
           </button>
         </div>
 
@@ -153,7 +158,7 @@
         <div>
           <div class="flex items-center gap-2">
             <h2 class="text-xl font-extrabold text-white">Select Level</h2>
-            <span id="levels-star-badge" class="mono text-xs font-bold px-2.5 py-0.5 rounded-full bg-amber-500/20 text-amber-300 border border-amber-400/30">★ 0 / 72</span>
+            <span id="levels-star-badge" class="mono text-xs font-bold px-2.5 py-0.5 rounded-full bg-amber-500/20 text-amber-300 border border-amber-400/30">★ 0 / 108</span>
           </div>
           <p id="level-progress-text" class="text-xs text-slate-400 mt-0.5">Collect stars to unlock new warehouses</p>
         </div>
@@ -162,15 +167,21 @@
         </button>
       </div>
 
-      <div class="grid grid-cols-3 gap-1.5 bg-slate-900/70 p-1 rounded-2xl mb-4 border border-slate-700/60">
-        <button id="tab-classic" class="pack-tab rounded-xl py-1.5 text-xs font-bold transition text-slate-950 bg-sky-400">Classic (18)</button>
-        <button id="tab-starter" class="pack-tab rounded-xl py-1.5 text-xs font-bold transition text-slate-300 hover:text-white">Starter (6)</button>
-        <button id="tab-import" class="pack-tab rounded-xl py-1.5 text-xs font-bold transition text-slate-300 hover:text-white">Import .xsb</button>
+      <div class="grid grid-cols-4 gap-1 bg-slate-900/70 p-1 rounded-2xl mb-4 border border-slate-700/60">
+        <button id="tab-classic" class="pack-tab rounded-xl py-1.5 text-[11px] font-bold transition text-slate-950 bg-sky-400">Classic (18)</button>
+        <button id="tab-starter" class="pack-tab rounded-xl py-1.5 text-[11px] font-bold transition text-slate-300 hover:text-white">Starter (6)</button>
+        <button id="tab-premium" class="pack-tab rounded-xl py-1.5 text-[11px] font-bold transition text-amber-300 hover:text-white">★ Packs (12)</button>
+        <button id="tab-import" class="pack-tab rounded-xl py-1.5 text-[11px] font-bold transition text-slate-300 hover:text-white">Import</button>
       </div>
 
-      <div id="level-lock-toast" class="hidden mb-3 rounded-xl bg-amber-500/15 border border-amber-400/30 px-3 py-2 text-xs text-amber-200 font-medium text-center"></div>
+      <div id="level-lock-toast" class="hidden mb-3 rounded-xl bg-amber-500/15 border border-amber-400/30 px-3 py-2 text-xs text-amber-200 font-medium flex flex-col sm:flex-row items-center justify-between gap-2 text-center sm:text-left">
+        <span id="level-lock-text"></span>
+        <button id="btn-level-lock-action" class="hidden shrink-0 game-btn game-btn-gold rounded-xl px-3 py-1.5 text-[11px] font-extrabold"></button>
+      </div>
 
       <div id="level-grid" class="grid grid-cols-2 gap-2.5 max-h-[52vh] overflow-y-auto pr-1"></div>
+
+      <div id="premium-packs-panel" class="hidden flex-col gap-3.5 max-h-[52vh] overflow-y-auto pr-1"></div>
 
       <div id="import-panel" class="hidden flex-col gap-3">
         <p class="text-xs text-slate-300 leading-relaxed">
@@ -187,39 +198,53 @@
 
   <!-- Main Menu Overlay -->
   <div id="modal-menu" class="modal-backdrop fixed inset-0 z-30 bg-slate-950/60 backdrop-blur-sm flex items-center justify-center p-4">
-    <div class="modal-card glass-panel rounded-3xl w-full max-w-sm max-h-[88vh] overflow-y-auto p-6 sm:p-7 text-center">
-      <div class="w-16 h-16 mx-auto mb-3 rounded-2xl bg-gradient-to-br from-sky-400 via-indigo-500 to-emerald-400 flex items-center justify-center shadow-lg shadow-sky-500/30">
-        <svg class="w-9 h-9 text-slate-950" viewBox="0 0 24 24" fill="currentColor">
+    <div class="modal-card glass-panel rounded-3xl w-full max-w-sm max-h-[88vh] overflow-y-auto p-6 text-center">
+      <div class="w-14 h-14 mx-auto mb-3 rounded-2xl bg-gradient-to-br from-sky-400 via-indigo-500 to-emerald-400 flex items-center justify-center shadow-lg shadow-sky-500/30">
+        <svg class="w-8 h-8 text-slate-950" viewBox="0 0 24 24" fill="currentColor">
           <path d="M12 2L3 7v10l9 5 9-5V7l-9-5zm0 2.3L18.6 8 12 11.7 5.4 8 12 4.3zM5 9.8l6 3.4v6.5l-6-3.3V9.8zm14 6.6l-6 3.3v-6.5l6-3.4v6.6z"/>
         </svg>
       </div>
       <h1 class="text-3xl font-extrabold tracking-tight text-white">Voxel Sokoban</h1>
       <p class="text-xs text-slate-300 mt-1 mb-4">3D Voxel Puzzle Diorama</p>
 
-      <div class="grid grid-cols-2 gap-2.5 mb-5">
-        <div class="bg-slate-900/70 rounded-2xl p-2.5 border border-slate-700/60">
-          <div class="text-[10px] uppercase tracking-wider text-slate-400 font-semibold">Stars Earned</div>
-          <div id="menu-stars" class="mono text-lg font-bold text-amber-400">★ 0 / 72</div>
+      <div class="grid grid-cols-3 gap-2 mb-5">
+        <div class="bg-slate-900/70 rounded-2xl p-2 border border-slate-700/60">
+          <div class="text-[9px] uppercase tracking-wider text-slate-400 font-semibold">Stars</div>
+          <div id="menu-stars" class="mono text-sm sm:text-base font-bold text-amber-400">★ 0/108</div>
         </div>
-        <div class="bg-slate-900/70 rounded-2xl p-2.5 border border-slate-700/60">
-          <div class="text-[10px] uppercase tracking-wider text-slate-400 font-semibold">Total Score</div>
-          <div id="menu-score" class="mono text-lg font-bold text-sky-400">0</div>
+        <div class="bg-slate-900/70 rounded-2xl p-2 border border-slate-700/60">
+          <div class="text-[9px] uppercase tracking-wider text-slate-400 font-semibold">Score</div>
+          <div id="menu-score" class="mono text-sm sm:text-base font-bold text-sky-400">0</div>
+        </div>
+        <div class="bg-slate-900/70 rounded-2xl p-2 border border-slate-700/60">
+          <div class="text-[9px] uppercase tracking-wider text-slate-400 font-semibold">Coins</div>
+          <div id="menu-coins" class="mono text-sm sm:text-base font-bold text-amber-300">0</div>
         </div>
       </div>
 
-      <div class="flex flex-col gap-3">
+      <div class="flex flex-col gap-2.5">
         <button id="btn-menu-play" class="game-btn game-btn-primary rounded-2xl py-3.5 font-extrabold text-base flex items-center justify-center gap-2">
           <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>
           <span id="btn-menu-play-label">Play</span>
         </button>
-        <button id="btn-menu-levels" class="game-btn rounded-2xl py-3 font-bold text-sm text-slate-100 flex items-center justify-center gap-2">
-          <svg class="w-5 h-5 text-amber-400" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zm10 0a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zm10 0a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z"/></svg>
-          <span>Level Select</span>
+        <button id="btn-menu-shop" class="game-btn rounded-2xl py-3 font-bold text-sm text-amber-200 flex items-center justify-center gap-2">
+          <span class="w-4 h-4 rounded-full bg-amber-400 text-amber-950 font-extrabold text-[10px] flex items-center justify-center">V</span>
+          <span>Shop &amp; Themes</span>
         </button>
-        <button id="btn-menu-settings" class="game-btn rounded-2xl py-3 font-bold text-sm text-slate-100 flex items-center justify-center gap-2">
-          <svg class="w-5 h-5 text-sky-400" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"/><path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
-          <span>Settings</span>
+        <button id="btn-menu-pro" class="game-btn game-btn-gold rounded-2xl py-2.5 font-extrabold text-sm flex items-center justify-center gap-2">
+          <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 24 24"><path d="M5 16L3 5l5.5 5L12 4l3.5 6L21 5l-2 11H5zm14 3c0 .6-.4 1-1 1H6c-.6 0-1-.4-1-1v-1h14v1z"/></svg>
+          <span id="btn-menu-pro-label">Go Pro • Remove Ads</span>
         </button>
+        <div class="grid grid-cols-2 gap-2.5">
+          <button id="btn-menu-levels" class="game-btn rounded-2xl py-2.5 font-bold text-xs sm:text-sm text-slate-100 flex items-center justify-center gap-1.5">
+            <svg class="w-4 h-4 text-amber-400" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zm10 0a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zm10 0a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z"/></svg>
+            <span>Levels</span>
+          </button>
+          <button id="btn-menu-settings" class="game-btn rounded-2xl py-2.5 font-bold text-xs sm:text-sm text-slate-100 flex items-center justify-center gap-1.5">
+            <svg class="w-4 h-4 text-sky-400" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"/><path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
+            <span>Settings</span>
+          </button>
+        </div>
       </div>
     </div>
   </div>
@@ -265,12 +290,110 @@
           </button>
         </div>
 
+        <div id="settings-restore-row" class="pt-2 border-t border-slate-700/70">
+          <button id="btn-restore-purchases" class="game-btn rounded-2xl w-full py-2.5 text-xs font-bold text-sky-300 hover:text-sky-200">
+            Restore Purchases
+          </button>
+          <p id="restore-status" class="text-[11px] text-center text-slate-400 mt-1.5 min-h-[1rem]"></p>
+        </div>
+
+        <div id="settings-dev-monetization" class="hidden pt-2 border-t border-slate-700/70 space-y-2.5">
+          <div class="text-[10px] uppercase tracking-wider font-bold text-amber-300">Dev Monetization (Mock Adapter)</div>
+          <div class="grid grid-cols-2 gap-2">
+            <button id="btn-dev-toggle-pro" class="game-btn rounded-xl py-2 px-2 text-[11px] font-bold text-amber-200">Toggle Pro</button>
+            <button id="btn-dev-add-coins" class="game-btn rounded-xl py-2 px-2 text-[11px] font-bold text-emerald-300">+500 Coins</button>
+            <button id="btn-dev-reset-cooldowns" class="game-btn rounded-xl py-2 px-2 text-[11px] font-bold text-sky-200">Reset Cooldowns</button>
+            <button id="btn-dev-reset-economy" class="game-btn rounded-xl py-2 px-2 text-[11px] font-bold text-rose-300">Reset Purchases</button>
+          </div>
+          <div class="flex items-center justify-between bg-slate-900/60 rounded-2xl px-3.5 py-2.5 border border-slate-700/60">
+            <div>
+              <div class="text-xs font-bold text-white">Simulate Ad No-Fill</div>
+              <div class="text-[10px] text-slate-400">Force mock ads to fail</div>
+            </div>
+            <button id="toggle-dev-ad-fail" class="toggle-track" role="switch" aria-checked="false" aria-label="Simulate Ad No-Fill">
+              <div class="toggle-thumb"></div>
+            </button>
+          </div>
+          <p id="dev-monetization-note" class="text-[11px] text-center text-slate-400 min-h-[1rem]"></p>
+        </div>
+
         <div class="pt-2 border-t border-slate-700/70">
           <button id="btn-reset-progress" class="game-btn rounded-2xl w-full py-2.5 text-xs font-bold text-rose-300 hover:text-rose-200">
-            Reset All Stars & Progress
+            Reset All Stars &amp; Progress
           </button>
           <p id="reset-progress-note" class="text-[11px] text-center text-slate-400 mt-1.5 min-h-[1rem]"></p>
         </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Cosmetic Shop Modal -->
+  <div id="modal-shop" class="modal-backdrop modal-hidden fixed inset-0 z-50 bg-slate-950/75 backdrop-blur-sm flex items-center justify-center p-4">
+    <div class="modal-card glass-panel rounded-3xl w-full max-w-md max-h-[88vh] flex flex-col p-5 sm:p-6">
+      <div class="flex items-center justify-between mb-3">
+        <div class="flex items-center gap-2.5">
+          <h2 class="text-xl font-extrabold text-white">Voxel Shop</h2>
+          <div class="coin-badge rounded-full px-2.5 py-0.5 flex items-center gap-1.5">
+            <span class="w-3.5 h-3.5 rounded-full bg-amber-400 text-amber-950 font-extrabold text-[9px] flex items-center justify-center">V</span>
+            <span id="shop-coins" class="mono text-xs font-bold text-amber-200">0</span>
+          </div>
+        </div>
+        <button id="btn-close-shop" class="game-btn rounded-xl w-9 h-9 text-slate-300" aria-label="Close Shop">
+          <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2.2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/></svg>
+        </button>
+      </div>
+
+      <div class="flex items-center gap-2 mb-3">
+        <button id="btn-shop-free-coins" class="game-btn game-btn-emerald rounded-2xl flex-1 py-2 px-3 text-xs font-extrabold flex items-center justify-center gap-1.5">
+          <span>+50 Coins (Watch Ad)</span>
+        </button>
+        <button id="btn-shop-go-pro" class="game-btn game-btn-gold rounded-2xl py-2 px-3 text-xs font-extrabold shrink-0">
+          Go Pro
+        </button>
+      </div>
+
+      <div class="grid grid-cols-3 gap-1.5 bg-slate-900/70 p-1 rounded-2xl mb-3 border border-slate-700/60">
+        <button id="shop-tab-themes" class="rounded-xl py-1.5 text-xs font-bold transition text-slate-950 bg-sky-400">Themes (6)</button>
+        <button id="shop-tab-bots" class="rounded-xl py-1.5 text-xs font-bold transition text-slate-300 hover:text-white">Bots (5)</button>
+        <button id="shop-tab-crates" class="rounded-xl py-1.5 text-xs font-bold transition text-slate-300 hover:text-white">Crates (5)</button>
+      </div>
+
+      <div id="shop-status" class="text-xs text-center text-slate-300 mb-2 min-h-[1rem]"></div>
+
+      <div id="shop-grid" class="grid grid-cols-2 gap-2.5 max-h-[48vh] overflow-y-auto pr-1"></div>
+    </div>
+  </div>
+
+  <!-- Pro Upgrade Modal -->
+  <div id="modal-pro" class="modal-backdrop modal-hidden fixed inset-0 z-[55] bg-slate-950/80 backdrop-blur-sm flex items-center justify-center p-4">
+    <div class="modal-card glass-panel rounded-3xl w-full max-w-sm max-h-[88vh] overflow-y-auto p-6 text-center">
+      <div class="flex items-center justify-between mb-3">
+        <span class="mono text-[10px] font-bold uppercase tracking-wider px-2.5 py-1 rounded-full bg-amber-500/20 text-amber-300 border border-amber-400/30">One-Time Upgrade</span>
+        <button id="btn-close-pro" class="game-btn rounded-xl w-8 h-8 text-slate-300" aria-label="Close Pro Modal">
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2.2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/></svg>
+        </button>
+      </div>
+
+      <h2 class="text-2xl font-extrabold text-white mb-1">Voxel Sokoban Pro</h2>
+      <p class="text-xs text-slate-300 mb-4">Unlock the full puzzle collection and remove interruptions forever.</p>
+
+      <div class="space-y-2 text-left bg-slate-900/70 rounded-2xl p-3.5 border border-slate-700/60 mb-4 text-xs text-slate-200">
+        <div class="flex items-center gap-2"><span class="text-emerald-400 font-bold">✓</span><span>No interstitial ads ever</span></div>
+        <div class="flex items-center gap-2"><span class="text-emerald-400 font-bold">✓</span><span>Permanent 2× Voxel Coins on every win</span></div>
+        <div class="flex items-center gap-2"><span class="text-emerald-400 font-bold">✓</span><span>Unlock Neon Vault &amp; Grandmaster Packs (12 levels)</span></div>
+        <div class="flex items-center gap-2"><span class="text-emerald-400 font-bold">✓</span><span>Prestige Set (Obsidian Vault, Gilded King, Diamond Vault)</span></div>
+        <div class="flex items-center gap-2"><span class="text-emerald-400 font-bold">✓</span><span>+500 Bonus Coins &amp; all star-locked levels</span></div>
+      </div>
+
+      <p id="pro-status" class="text-xs text-amber-300 min-h-[1rem] mb-3"></p>
+
+      <div class="flex flex-col gap-2.5">
+        <button id="btn-pro-buy" class="game-btn game-btn-gold rounded-2xl w-full py-3 font-extrabold text-sm">
+          Unlock Pro — $4.99
+        </button>
+        <button id="btn-pro-restore" class="game-btn rounded-2xl w-full py-2.5 font-bold text-xs text-slate-200">
+          Restore Purchases
+        </button>
       </div>
     </div>
   </div>
@@ -282,7 +405,7 @@
       <h2 id="win-title" class="text-2xl font-extrabold text-white mb-1">Level Cleared!</h2>
       <p id="win-subtitle" class="text-sm text-slate-300 mb-4">All voxel crates locked into place.</p>
 
-      <div class="grid grid-cols-3 gap-2.5 mb-5">
+      <div class="grid grid-cols-3 gap-2.5 mb-3.5">
         <div class="bg-slate-800/70 rounded-2xl p-2.5 border border-slate-700/60">
           <div class="text-[10px] uppercase tracking-wider text-slate-400 font-semibold">Score</div>
           <div id="win-score" class="mono text-xl font-bold text-emerald-400">0</div>
@@ -295,6 +418,23 @@
           <div class="text-[10px] uppercase tracking-wider text-slate-400 font-semibold">3★ Par</div>
           <div id="win-par" class="mono text-xl font-bold text-amber-400">0</div>
         </div>
+      </div>
+
+      <div id="win-coins-row" class="coin-badge rounded-2xl px-3.5 py-2 mb-3 flex items-center justify-between text-xs">
+        <div class="flex items-center gap-2 font-bold text-amber-200">
+          <span class="w-4 h-4 rounded-full bg-amber-400 text-amber-950 font-extrabold text-[10px] flex items-center justify-center">V</span>
+          <span id="win-coins-text">+0 Voxel Coins</span>
+        </div>
+        <span id="win-pro-2x-badge" class="hidden mono text-[10px] font-extrabold px-2 py-0.5 rounded-full bg-amber-400 text-slate-950">PRO 2×</span>
+      </div>
+
+      <button id="btn-win-double" class="hidden game-btn game-btn-gold rounded-2xl w-full py-2.5 font-extrabold text-sm mb-3">
+        2× Coins • Watch Ad
+      </button>
+
+      <div id="win-trial-msg" class="hidden mb-3 rounded-xl bg-sky-500/15 border border-sky-400/30 px-3 py-2 text-xs text-sky-200 flex items-center justify-between gap-2 text-left">
+        <span id="win-trial-text"></span>
+        <button id="btn-win-trial-shop" class="shrink-0 game-btn game-btn-primary rounded-lg px-2.5 py-1 text-[11px] font-bold">Shop</button>
       </div>
 
       <div id="win-unlock-msg" class="hidden mb-4 rounded-xl bg-amber-500/15 border border-amber-400/30 px-3 py-2 text-xs text-amber-200 font-semibold"></div>
@@ -310,13 +450,38 @@
     </div>
   </div>
 
+  <!-- Simulated Ad / Mock Checkout Overlay -->
+  <div id="modal-ad" class="modal-backdrop modal-hidden fixed inset-0 z-[90] bg-slate-950/90 backdrop-blur-md flex items-center justify-center p-4">
+    <div class="modal-card glass-panel rounded-3xl w-full max-w-sm p-6 text-center">
+      <div id="ad-badge" class="mono inline-block text-[10px] font-bold tracking-wider px-2.5 py-1 rounded-full bg-amber-500/20 text-amber-300 border border-amber-400/30 mb-3">
+        MOCK REWARDED AD
+      </div>
+      <h2 id="ad-title" class="text-xl font-extrabold text-white mb-2">Sponsored Break</h2>
+      <p id="ad-subtitle" class="text-xs text-slate-300 leading-relaxed mb-4"></p>
+
+      <div id="ad-progress-wrap" class="w-full h-2.5 bg-slate-900 rounded-full overflow-hidden border border-slate-700/70 mb-2">
+        <div id="ad-progress-fill" class="h-full bg-gradient-to-r from-amber-400 to-emerald-400" style="width: 0%;"></div>
+      </div>
+      <p id="ad-timer-text" class="mono text-xs text-slate-300 mb-4"></p>
+
+      <div class="flex gap-2.5">
+        <button id="ad-btn-secondary" class="game-btn rounded-2xl flex-1 py-3 font-bold text-sm text-rose-300">Cancel</button>
+        <button id="ad-btn-primary" class="game-btn game-btn-emerald rounded-2xl flex-1 py-3 font-extrabold text-sm">Complete</button>
+      </div>
+    </div>
+  </div>
+
   <!-- Application Modules (Loaded in dependency order) -->
   <script src="js/config.js"></script>
   <script src="js/levels.js"></script>
   <script src="js/storage.js"></script>
   <script src="js/audio.js"></script>
+  <script src="js/cosmetics.js"></script>
   <script src="js/voxels.js"></script>
   <script src="js/renderer.js"></script>
+  <script src="js/platform.js"></script>
+  <script src="js/adapters/mock-adapter.js"></script>
+  <script src="js/monetization.js"></script>
   <script src="js/game.js"></script>
   <script src="js/ui.js"></script>
   <script src="js/input.js"></script>
