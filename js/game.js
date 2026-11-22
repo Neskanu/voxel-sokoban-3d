@@ -38,7 +38,9 @@
     camYaw: CONFIG.CAMERA_ISO_OFFSET,
     camTargetYaw: CONFIG.CAMERA_ISO_OFFSET,
     camPitch: CONFIG.CAMERA_DEFAULT_PITCH,
+    camTargetPitch: CONFIG.CAMERA_DEFAULT_PITCH,
     camDistance: 12,
+    camTargetDistance: 12,
     camLookX: 0,
     camLookZ: 0,
     camTargetX: 0,
@@ -188,7 +190,7 @@
   }
 
   function attemptMove(dx, dy) {
-    if (state.won || state.menuOpen || VS.UI.isAnyModalOpen() || (VS.Monetization && VS.Monetization.isAdActive())) return;
+    if (state.won || state.menuOpen || VS.UI.isAnyModalOpen() || (VS.Monetization && VS.Monetization.isAdActive()) || (VS.Intro && VS.Intro.isActive())) return;
     VS.Sound.unlock();
 
     if (VS.Storage.getSettings().autoFollow) {
@@ -272,7 +274,7 @@
   }
 
   function undoMove() {
-    if (state.history.length === 0 || state.won || state.menuOpen || VS.UI.isAnyModalOpen() || (VS.Monetization && VS.Monetization.isAdActive())) return;
+    if (state.history.length === 0 || state.won || state.menuOpen || VS.UI.isAnyModalOpen() || (VS.Monetization && VS.Monetization.isAdActive()) || (VS.Intro && VS.Intro.isActive())) return;
     VS.Sound.unlock();
 
     if (VS.Storage.getSettings().autoFollow) {
@@ -364,7 +366,7 @@
   }
 
   function handleTapTile(clientX, clientY) {
-    if (state.won || state.menuOpen || VS.UI.isAnyModalOpen() || (VS.Monetization && VS.Monetization.isAdActive())) return;
+    if (state.won || state.menuOpen || VS.UI.isAnyModalOpen() || (VS.Monetization && VS.Monetization.isAdActive()) || (VS.Intro && VS.Intro.isActive())) return;
     const hit = VS.Renderer.raycastFloor(clientX, clientY);
     if (!hit) return;
 

@@ -73,7 +73,7 @@
   function loadSaveData() {
     const defaults = {
       levels: {},
-      settings: { sound: true, showDpad: true, autoFollow: true },
+      settings: { sound: true, showDpad: true, autoFollow: true, introSeen: false },
       economy: createDefaultEconomy()
     };
 

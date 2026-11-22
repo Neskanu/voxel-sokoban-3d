@@ -178,7 +178,12 @@ canvas {
 
 .modal-hidden {
   opacity: 0;
+  visibility: hidden;
   pointer-events: none;
+}
+
+.modal-hidden * {
+  pointer-events: none !important;
 }
 
 .modal-hidden .modal-card {
@@ -245,4 +250,43 @@ canvas {
 
 .modal-card {
   overflow-x: hidden;
+}
+
+/* 8. Intro Sequence Transitions */
+header, footer {
+  transition: opacity 0.35s ease;
+}
+
+body.intro-active header,
+body.intro-active footer {
+  opacity: 0;
+  pointer-events: none;
+}
+
+.intro-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 999px;
+  background: rgba(148, 163, 184, 0.35);
+  transition: width 0.25s ease, background 0.25s ease;
+}
+
+.intro-dot.active {
+  width: 24px;
+  background: #38bdf8;
+}
+
+@keyframes introCaptionPop {
+  0% {
+    opacity: 0.4;
+    transform: translateY(6px);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.intro-caption-pop {
+  animation: introCaptionPop 0.32s ease-out;
 }

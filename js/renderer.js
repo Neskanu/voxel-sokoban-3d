@@ -347,10 +347,21 @@
     const state = VS.Game.state;
 
     // 1. Camera Orbit, Auto-Follow & Panning
-    if (state.menuOpen) {
-      state.camTargetYaw += dt * 0.16;
+    const introActive = Boolean(VS.Intro && VS.Intro.isActive());
+    if (introActive) {
+      if (VS.Intro.isOrbiting()) {
+        state.camTargetYaw += dt * 0.32;
+      }
+      const introLerp = Math.min(1, dt * 3.4);
+      state.camYaw += (state.camTargetYaw - state.camYaw) * introLerp;
+      state.camPitch += (state.camTargetPitch - state.camPitch) * introLerp;
+      state.camDistance += (state.camTargetDistance - state.camDistance) * introLerp;
+    } else {
+      if (state.menuOpen) {
+        state.camTargetYaw += dt * 0.16;
+      }
+      state.camYaw += (state.camTargetYaw - state.camYaw) * Math.min(1, dt * 10);
     }
-    state.camYaw += (state.camTargetYaw - state.camYaw) * Math.min(1, dt * 10);
 
     if (state.camAutoFollow) {
       if (isWholeMapVisible()) {

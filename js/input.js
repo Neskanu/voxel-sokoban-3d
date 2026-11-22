@@ -125,6 +125,14 @@
 
   function setupKeyboardControls() {
     global.addEventListener('keydown', (e) => {
+      if (VS.Intro && VS.Intro.isActive()) {
+        if (e.key === 'Escape' || e.key === ' ' || e.key === 'Enter') {
+          e.preventDefault();
+          VS.Intro.skip();
+        }
+        return;
+      }
+
       if (e.key === 'Escape') {
         if (VS.UI.closeTopModal()) {
           e.preventDefault();
@@ -282,6 +290,23 @@
       VS.Storage.updateSetting('autoFollow', next);
       VS.Game.state.camAutoFollow = next;
       VS.UI.applySettings();
+    });
+
+    byId('btn-replay-intro').addEventListener('click', () => {
+      VS.Sound.unlock();
+      if (VS.Intro) {
+        VS.Intro.play({ restoreLevelIndex: VS.Game.state.levelIndex });
+      }
+    });
+
+    byId('btn-intro-skip').addEventListener('click', () => {
+      VS.Sound.unlock();
+      if (VS.Intro) VS.Intro.skip();
+    });
+
+    byId('btn-intro-cta').addEventListener('click', () => {
+      VS.Sound.unlock();
+      if (VS.Intro) VS.Intro.skip();
     });
 
     byId('btn-restore-purchases').addEventListener('click', async () => {
