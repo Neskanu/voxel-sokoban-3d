@@ -52,6 +52,18 @@
       global.clearInterval(shopCooldownTimer);
       shopCooldownTimer = null;
     }
+    if (
+      id !== 'modal-win' &&
+      id !== 'modal-ad' &&
+      VS.Game &&
+      VS.Game.state.won &&
+      !VS.Game.state.menuOpen &&
+      !isAnyModalOpen() &&
+      !(VS.Intro && VS.Intro.isActive())
+    ) {
+      showModal('modal-win');
+      return;
+    }
     if (VS.Platform && VS.Game && !VS.Game.state.menuOpen && !isAnyModalOpen() && !(VS.Intro && VS.Intro.isActive())) {
       VS.Platform.gameplayStart();
     }
@@ -112,8 +124,6 @@
 
   function openSettings() {
     applySettings();
-    const devNote = byId('dev-monetization-note');
-    if (devNote) devNote.textContent = '';
     refreshEconomyUI();
     showModal('modal-settings');
   }
@@ -193,16 +203,6 @@
     if (byId('hud-coins')) byId('hud-coins').textContent = coins.toLocaleString();
     if (byId('menu-coins')) byId('menu-coins').textContent = coins.toLocaleString();
     if (byId('shop-coins')) byId('shop-coins').textContent = coins.toLocaleString();
-
-    const devPanel = byId('settings-dev-monetization');
-    if (devPanel && VS.Monetization) {
-      const showDevUi = VS.Monetization.isDevUiEnabled();
-      devPanel.classList.toggle('hidden', !showDevUi);
-      if (showDevUi) {
-        const failEnabled = VS.MockAdapter ? VS.MockAdapter.getSimulateAdFail() : false;
-        syncToggle('toggle-dev-ad-fail', failEnabled);
-      }
-    }
 
     updateShopFreeCoinsButton();
     updateMenuStats();

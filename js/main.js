@@ -7,6 +7,9 @@
     try {
       if (VS.Loader) VS.Loader.setProgress(20, 'Connecting platform...');
       await VS.Platform.init();
+      if (VS.Storage && typeof VS.Storage.reload === 'function') {
+        VS.Storage.reload();
+      }
       VS.Platform.loadingStart();
 
       if (VS.Loader) VS.Loader.setProgress(38, 'Initializing 3D engine...');

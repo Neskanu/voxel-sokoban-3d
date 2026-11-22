@@ -91,7 +91,7 @@
       interstitialAds: true,
       iap: false,
       restorePurchases: false,
-      cloudSave: false
+      cloudSave: true
     },
 
     async init() {
@@ -188,6 +188,60 @@
 
     async restorePurchases() {
       return { restored: false, entitlements: [], reason: 'unavailable' };
+    },
+
+    getDataItem(key) {
+      const sdk = getSdk();
+      if (sdkReady && sdk && sdk.data && typeof sdk.data.getItem === 'function') {
+        try {
+          const val = sdk.data.getItem(key);
+          if (val !== null && val !== undefined) return String(val);
+        } catch (err) {
+          console.warn('CrazyGames SDK data.getItem failed; falling back to localStorage:', err);
+        }
+      }
+      try {
+        return global.localStorage ? global.localStorage.getItem(key) : null;
+      } catch (e) {
+        return null;
+      }
+    },
+
+    setDataItem(key, value) {
+      const strVal = String(value);
+      const sdk = getSdk();
+      let savedCloud = false;
+      if (sdkReady && sdk && sdk.data && typeof sdk.data.setItem === 'function') {
+        try {
+          sdk.data.setItem(key, strVal);
+          savedCloud = true;
+        } catch (err) {
+          console.warn('CrazyGames SDK data.setItem failed; falling back to localStorage:', err);
+        }
+      }
+      if (!savedCloud) {
+        try {
+          if (global.localStorage) global.localStorage.setItem(key, strVal);
+        } catch (e) {}
+      }
+    },
+
+    removeDataItem(key) {
+      const sdk = getSdk();
+      let removedCloud = false;
+      if (sdkReady && sdk && sdk.data && typeof sdk.data.removeItem === 'function') {
+        try {
+          sdk.data.removeItem(key);
+          removedCloud = true;
+        } catch (err) {
+          console.warn('CrazyGames SDK data.removeItem failed; falling back to localStorage:', err);
+        }
+      }
+      if (!removedCloud) {
+        try {
+          if (global.localStorage) global.localStorage.removeItem(key);
+        } catch (e) {}
+      }
     },
 
     isSdkReady() {

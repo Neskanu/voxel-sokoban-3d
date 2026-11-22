@@ -236,6 +236,50 @@
     }
   }
 
+  function getDataItem(key) {
+    if (activeAdapter && typeof activeAdapter.getDataItem === 'function') {
+      try {
+        return activeAdapter.getDataItem(key);
+      } catch (err) {
+        console.warn('getDataItem error; falling back to localStorage:', err);
+      }
+    }
+    try {
+      return global.localStorage ? global.localStorage.getItem(key) : null;
+    } catch (e) {
+      return null;
+    }
+  }
+
+  function setDataItem(key, value) {
+    const strVal = String(value);
+    if (activeAdapter && typeof activeAdapter.setDataItem === 'function') {
+      try {
+        activeAdapter.setDataItem(key, strVal);
+        return;
+      } catch (err) {
+        console.warn('setDataItem error; falling back to localStorage:', err);
+      }
+    }
+    try {
+      if (global.localStorage) global.localStorage.setItem(key, strVal);
+    } catch (e) {}
+  }
+
+  function removeDataItem(key) {
+    if (activeAdapter && typeof activeAdapter.removeDataItem === 'function') {
+      try {
+        activeAdapter.removeDataItem(key);
+        return;
+      } catch (err) {
+        console.warn('removeDataItem error; falling back to localStorage:', err);
+      }
+    }
+    try {
+      if (global.localStorage) global.localStorage.removeItem(key);
+    } catch (e) {}
+  }
+
   VS.Platform = {
     registerAdapter,
     init,
@@ -254,6 +298,9 @@
     showInterstitialAd,
     getProducts,
     purchaseProduct,
-    restorePurchases
+    restorePurchases,
+    getDataItem,
+    setDataItem,
+    removeDataItem
   };
 })(window);

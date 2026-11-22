@@ -70,6 +70,29 @@
     };
   }
 
+  function readStoredItem(key) {
+    if (VS.Platform && typeof VS.Platform.getDataItem === 'function') {
+      return VS.Platform.getDataItem(key);
+    }
+    try {
+      return global.localStorage ? global.localStorage.getItem(key) : null;
+    } catch (e) {
+      return null;
+    }
+  }
+
+  function writeStoredItem(key, value) {
+    if (VS.Platform && typeof VS.Platform.setDataItem === 'function') {
+      VS.Platform.setDataItem(key, value);
+      return;
+    }
+    try {
+      if (global.localStorage) global.localStorage.setItem(key, value);
+    } catch (e) {
+      // Ignore storage write errors
+    }
+  }
+
   function loadSaveData() {
     const defaults = {
       levels: {},
@@ -78,7 +101,7 @@
     };
 
     try {
-      const raw = global.localStorage.getItem(CONFIG.STORAGE_KEY);
+      const raw = readStoredItem(CONFIG.STORAGE_KEY);
       if (raw) {
         const parsed = JSON.parse(raw);
         return {
@@ -89,7 +112,7 @@
       }
 
       // Migrate v1 completed level IDs if present
-      const legacy = JSON.parse(global.localStorage.getItem(CONFIG.STORAGE_KEY_V1) || '[]');
+      const legacy = JSON.parse(readStoredItem(CONFIG.STORAGE_KEY_V1) || '[]');
       if (Array.isArray(legacy)) {
         legacy.forEach((id) => {
           defaults.levels[id] = { stars: 1, bestMoves: null, bestScore: 1000 };
@@ -102,11 +125,16 @@
     return defaults;
   }
 
-  const saveData = loadSaveData();
+  let saveData = loadSaveData();
+
+  function reload() {
+    saveData = loadSaveData();
+    return saveData;
+  }
 
   function persistSaveData() {
     try {
-      global.localStorage.setItem(CONFIG.STORAGE_KEY, JSON.stringify(saveData));
+      writeStoredItem(CONFIG.STORAGE_KEY, JSON.stringify(saveData));
     } catch (e) {
       // Ignore storage write errors
     }
@@ -358,6 +386,7 @@
   }
 
   VS.Storage = {
+    reload,
     getSettings,
     updateSetting,
     getLevelRecord,

@@ -138,6 +138,26 @@
         return;
       }
 
+      if (
+        e.key === 'Enter' &&
+        !e.repeat &&
+        !isEditableTarget(e.target) &&
+        !VS.Game.state.menuOpen &&
+        VS.UI.isModalOpen('modal-win') &&
+        !VS.UI.isModalOpen('modal-ad') &&
+        !VS.UI.isModalOpen('modal-levels') &&
+        !VS.UI.isModalOpen('modal-settings') &&
+        !VS.UI.isModalOpen('modal-shop') &&
+        !(VS.Monetization && VS.Monetization.isAdActive())
+      ) {
+        const doubleBtn = byId('btn-win-double');
+        if (doubleBtn && !doubleBtn.classList.contains('hidden') && !doubleBtn.disabled) {
+          e.preventDefault();
+          doubleBtn.click();
+        }
+        return;
+      }
+
       if (isEditableTarget(e.target) || VS.Game.state.menuOpen || VS.UI.isAnyModalOpen()) {
         return;
       }
@@ -298,35 +318,6 @@
       if (VS.Intro) VS.Intro.skip();
     });
 
-    byId('btn-dev-add-coins').addEventListener('click', () => {
-      if (!VS.Monetization) return;
-      const total = VS.Monetization.devAddCoins(500);
-      const note = byId('dev-monetization-note');
-      if (note) note.textContent = `Added +500 coins (Balance: ${total}).`;
-    });
-
-    byId('btn-dev-reset-cooldowns').addEventListener('click', () => {
-      if (!VS.Monetization) return;
-      VS.Monetization.devResetCooldowns();
-      const note = byId('dev-monetization-note');
-      if (note) note.textContent = 'Ad cooldowns reset (interstitial armed).';
-    });
-
-    byId('btn-dev-reset-economy').addEventListener('click', () => {
-      if (!VS.Monetization) return;
-      VS.Monetization.devResetMockEconomy();
-      const note = byId('dev-monetization-note');
-      if (note) note.textContent = 'Mock packs, cosmetics & coins reset.';
-    });
-
-    byId('toggle-dev-ad-fail').addEventListener('click', () => {
-      if (!VS.Monetization || !VS.MockAdapter) return;
-      const next = !VS.MockAdapter.getSimulateAdFail();
-      VS.Monetization.devSetSimulateAdFail(next);
-      const note = byId('dev-monetization-note');
-      if (note) note.textContent = `Simulate Ad No-Fill: ${next ? 'ON' : 'OFF'}.`;
-    });
-
     byId('btn-reset-progress').addEventListener('click', () => {
       VS.UI.handleResetProgressClick();
     });
@@ -400,6 +391,18 @@
 
     byId('btn-win-replay').addEventListener('click', () => {
       VS.Game.loadLevel(VS.Game.state.levelIndex);
+    });
+
+    byId('btn-win-levels').addEventListener('click', () => {
+      VS.Sound.unlock();
+      VS.UI.hideModal('modal-win');
+      VS.UI.openLevelSelectForCurrentPack();
+    });
+
+    byId('btn-win-menu').addEventListener('click', () => {
+      VS.Sound.unlock();
+      VS.UI.hideModal('modal-win');
+      VS.UI.openMainMenu();
     });
 
     byId('btn-win-next').addEventListener('click', async () => {

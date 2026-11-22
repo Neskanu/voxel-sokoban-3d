@@ -740,25 +740,6 @@
           </button>
         </div>
 
-        <div id="settings-dev-monetization" class="hidden pt-2 border-t border-slate-700/70 space-y-2.5">
-          <div class="text-[10px] uppercase tracking-wider font-bold text-amber-300">Dev Monetization (Mock Adapter)</div>
-          <div class="grid grid-cols-2 gap-2">
-            <button id="btn-dev-add-coins" class="col-span-2 game-btn rounded-xl py-2 px-2 text-[11px] font-bold text-emerald-300">+500 Coins</button>
-            <button id="btn-dev-reset-cooldowns" class="game-btn rounded-xl py-2 px-2 text-[11px] font-bold text-sky-200">Reset Cooldowns</button>
-            <button id="btn-dev-reset-economy" class="game-btn rounded-xl py-2 px-2 text-[11px] font-bold text-rose-300">Reset Economy</button>
-          </div>
-          <div class="flex items-center justify-between bg-slate-900/60 rounded-2xl px-3.5 py-2.5 border border-slate-700/60">
-            <div>
-              <div class="text-xs font-bold text-white">Simulate Ad No-Fill</div>
-              <div class="text-[10px] text-slate-400">Force mock ads to fail</div>
-            </div>
-            <button id="toggle-dev-ad-fail" class="toggle-track" role="switch" aria-checked="false" aria-label="Simulate Ad No-Fill">
-              <div class="toggle-thumb"></div>
-            </button>
-          </div>
-          <p id="dev-monetization-note" class="text-[11px] text-center text-slate-400 min-h-[1rem]"></p>
-        </div>
-
         <div class="pt-2 border-t border-slate-700/70">
           <button id="btn-reset-progress" class="game-btn rounded-2xl w-full py-2.5 text-xs font-bold text-rose-300 hover:text-rose-200">
             Reset All Stars &amp; Progress
@@ -851,6 +832,17 @@
           Next Level
         </button>
       </div>
+
+      <div class="grid grid-cols-2 gap-2.5 mt-2.5">
+        <button id="btn-win-levels" class="game-btn rounded-2xl py-2.5 font-semibold text-sm text-slate-200 flex items-center justify-center gap-1.5">
+          <svg class="w-4 h-4 text-amber-400" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zm10 0a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zm10 0a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z"/></svg>
+          <span>Levels</span>
+        </button>
+        <button id="btn-win-menu" class="game-btn rounded-2xl py-2.5 font-semibold text-sm text-slate-200 flex items-center justify-center gap-1.5">
+          <svg class="w-4 h-4 text-sky-400" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"/></svg>
+          <span>Main Menu</span>
+        </button>
+      </div>
     </div>
   </div>
 
@@ -879,19 +871,19 @@
   <script src="js/config.js?v=20261122-9"></script>
   <script src="js/levels-data.js?v=20261122-9"></script>
   <script src="js/levels.js?v=20261122-9"></script>
-  <script src="js/storage.js?v=20261122-9"></script>
+  <script src="js/storage.js?v=20261122-12"></script>
   <script src="js/audio.js?v=20261122-9"></script>
   <script src="js/cosmetics.js?v=20261122-9"></script>
   <script src="js/voxels.js?v=20261122-9"></script>
   <script src="js/renderer.js?v=20261122-9"></script>
-  <script src="js/platform.js?v=20261122-9"></script>
-  <script src="js/adapters/mock-adapter.js?v=20261122-9"></script>
-  <script src="js/adapters/crazygames-adapter.js?v=20261122-9"></script>
+  <script src="js/platform.js?v=20261122-12"></script>
+  <script src="js/adapters/mock-adapter.js?v=20261122-12"></script>
+  <script src="js/adapters/crazygames-adapter.js?v=20261122-12"></script>
   <script src="js/monetization.js?v=20261122-9"></script>
   <script src="js/game.js?v=20261122-9"></script>
   <script src="js/intro.js?v=20261122-9"></script>
-  <script src="js/ui.js?v=20261122-9"></script>
-  <script src="js/input.js?v=20261122-9"></script>
-  <script src="js/main.js?v=20261122-9"></script>
+  <script src="js/ui.js?v=20261122-12"></script>
+  <script src="js/input.js?v=20261122-11"></script>
+  <script src="js/main.js?v=20261122-12"></script>
 </body>
 </html>
