@@ -10,21 +10,41 @@
       id: 'pro_unlock',
       title: 'Voxel Sokoban Pro',
       price: '$4.99',
-      description: 'No interstitials, permanent 2× coins, both premium packs (12 levels), Prestige cosmetics + 500 bonus coins.',
-      entitlements: ['pro_unlock', 'pack_neon_vault', 'pack_grandmaster']
+      description: 'No interstitials, permanent 2× coins, all 4 level packs (400 levels), Prestige cosmetics + 500 bonus coins.',
+      entitlements: [
+        'pro_unlock',
+        'pack_neon_vault',
+        'pack_frost_citadel',
+        'pack_sandstone_labyrinth',
+        'pack_grandmaster'
+      ]
     },
     {
       id: 'pack_neon_vault',
       title: 'Neon Vault Pack',
       price: '$1.99',
-      description: 'Unlock all 6 tactical cyber-warehouse puzzles in Neon Vault.',
+      description: 'Unlock all 100 Medium-Hard puzzles in Neon Vault.',
       entitlements: ['pack_neon_vault']
+    },
+    {
+      id: 'pack_frost_citadel',
+      title: 'Frost Citadel Pack',
+      price: '$2.49',
+      description: 'Unlock all 100 Hard puzzles in Frost Citadel.',
+      entitlements: ['pack_frost_citadel']
+    },
+    {
+      id: 'pack_sandstone_labyrinth',
+      title: 'Sandstone Labyrinth Pack',
+      price: '$2.99',
+      description: 'Unlock all 100 Expert puzzles in Sandstone Labyrinth.',
+      entitlements: ['pack_sandstone_labyrinth']
     },
     {
       id: 'pack_grandmaster',
       title: 'Grandmaster Pack',
-      price: '$2.99',
-      description: 'Unlock all 6 expert multi-stage puzzles in Grandmaster.',
+      price: '$3.49',
+      description: 'Unlock all 100 Grandmaster puzzles in Grandmaster.',
       entitlements: ['pack_grandmaster']
     }
   ];

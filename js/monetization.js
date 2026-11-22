@@ -307,6 +307,13 @@
     return res || { shown: false };
   }
 
+  const PACK_SKU_MAP = {
+    pack_neon_vault: 'neon-vault',
+    pack_frost_citadel: 'frost-citadel',
+    pack_sandstone_labyrinth: 'sandstone-labyrinth',
+    pack_grandmaster: 'grandmaster'
+  };
+
   function applyEntitlements(entitlements) {
     if (!Array.isArray(entitlements) || !VS.Storage) {
       return { changed: false, bonusGranted: 0 };
@@ -326,14 +333,12 @@
       changed = true;
     }
 
-    if (entitlements.includes('pack_neon_vault')) {
-      VS.Storage.unlockPack('neon-vault');
-      changed = true;
-    }
-    if (entitlements.includes('pack_grandmaster')) {
-      VS.Storage.unlockPack('grandmaster');
-      changed = true;
-    }
+    Object.entries(PACK_SKU_MAP).forEach(([sku, packId]) => {
+      if (entitlements.includes(sku)) {
+        VS.Storage.unlockPack(packId);
+        changed = true;
+      }
+    });
 
     return { changed, bonusGranted };
   }
@@ -356,14 +361,16 @@
     return { ok: true, bonusGranted: applied.bonusGranted };
   }
 
-  async function purchasePack(packId) {
+  async function purchasePack(packId, options) {
     const pack = VS.Levels && VS.Levels.getPackMeta ? VS.Levels.getPackMeta(packId) : null;
     if (!pack) return { ok: false, reason: 'invalid_pack' };
     if (VS.Storage && VS.Storage.isPackOwned(packId)) {
       return { ok: true, alreadyOwned: true, pack };
     }
 
-    if (getCapabilities().iap) {
+    const useCoins = Boolean(options && (options.useCoins || options.method === 'coins'));
+
+    if (!useCoins && getCapabilities().iap) {
       if (adActive) return { ok: false, reason: 'busy' };
       const res = await withAdLifecycle(() => VS.Platform.purchaseProduct(pack.productId));
       if (!res || !res.purchased) {

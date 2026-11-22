@@ -3,7 +3,24 @@
 
   const VS = (global.VoxelSokoban = global.VoxelSokoban || {});
 
-  let activePackTab = 'classic';
+  const PAGE_SIZE = 20;
+  const GRID_COLS_BY_COUNT = {
+    2: 'grid-cols-2',
+    3: 'grid-cols-3',
+    4: 'grid-cols-4',
+    5: 'grid-cols-5'
+  };
+
+  let activePackTab = 'starter';
+  let activePremiumPackId = 'neon-vault';
+  const packPages = {
+    starter: 0,
+    classic: 0,
+    'neon-vault': 0,
+    'frost-citadel': 0,
+    'sandstone-labyrinth': 0,
+    grandmaster: 0
+  };
   let activeShopTab = 'themes';
   let resetConfirmArmed = false;
   let resetConfirmTimer = null;
@@ -136,7 +153,8 @@
     if (!lv) return;
 
     const tag = VS.Levels.getLevelTag(lv);
-    byId('hud-level-text').textContent = `${tag}. ${lv.name}`;
+    const prefix = Number.isFinite(lv.rank) ? `#${lv.rank} · ${tag}` : tag;
+    byId('hud-level-text').textContent = `${prefix}. ${lv.name}`;
     byId('hud-moves').textContent = state.moves;
     byId('hud-par').textContent = lv.par || '--';
   }
@@ -291,17 +309,53 @@
     renderLevelGrid();
   }
 
-  function openLevelSelectForCurrentPack() {
-    const curLv = VS.Levels.get(VS.Game.state.levelIndex);
-    if (curLv && curLv.pack === 'starter') {
-      activePackTab = 'starter';
-    } else if (curLv && curLv.premiumPackId) {
-      activePackTab = 'premium';
-    } else {
-      activePackTab = 'classic';
+  function setActivePremiumPack(packId) {
+    if (packId && VS.Levels.getPackMeta(packId)) {
+      activePremiumPackId = packId;
     }
     renderLevelGrid();
+  }
+
+  function setPackPage(packKey, pageIndex) {
+    packPages[packKey] = Math.max(0, pageIndex);
+    renderLevelGrid();
+  }
+
+  function focusLevelInSelector(lv) {
+    const allLevels = VS.Levels.getAll();
+    if (!lv) {
+      activePackTab = 'starter';
+      return;
+    }
+    if (lv.pack === 'starter') {
+      activePackTab = 'starter';
+      const idx = allLevels.filter((l) => l.pack === 'starter').findIndex((l) => l.id === lv.id);
+      packPages.starter = idx >= 0 ? Math.floor(idx / PAGE_SIZE) : 0;
+    } else if (lv.premiumPackId) {
+      activePackTab = 'premium';
+      activePremiumPackId = lv.premiumPackId;
+      const idx = allLevels
+        .filter((l) => l.premiumPackId === lv.premiumPackId)
+        .findIndex((l) => l.id === lv.id);
+      packPages[lv.premiumPackId] = idx >= 0 ? Math.floor(idx / PAGE_SIZE) : 0;
+    } else {
+      activePackTab = 'classic';
+      const idx = allLevels
+        .filter((l) => l.pack === 'classic' || l.pack === 'custom')
+        .findIndex((l) => l.id === lv.id);
+      packPages.classic = idx >= 0 ? Math.floor(idx / PAGE_SIZE) : 0;
+    }
+  }
+
+  function openLevelSelectForLevel(lv) {
+    focusLevelInSelector(lv);
+    renderLevelGrid();
     showModal('modal-levels');
+  }
+
+  function openLevelSelectForCurrentPack() {
+    const curLv = VS.Levels.get(VS.Game.state.levelIndex);
+    openLevelSelectForLevel(curLv);
   }
 
   function hideLevelLockToast() {
@@ -336,10 +390,11 @@
     const rec = VS.Storage.getLevelRecord(lv.id);
     const stars = rec ? rec.stars : 0;
     const tag = VS.Levels.getLevelTag(lv);
-    const caps = VS.Monetization ? VS.Monetization.getCapabilities() : { rewardedAds: false };
+    const topLabel = Number.isFinite(lv.rank) ? `#${lv.rank} · ${tag}` : tag;
+    const caps = VS.Monetization ? VS.Monetization.getCapabilities() : { rewardedAds: false, iap: false };
 
     const btn = global.document.createElement('button');
-    btn.className = `game-btn rounded-2xl p-3 text-left flex flex-col justify-between gap-1.5 ${
+    btn.className = `game-btn w-full min-w-0 rounded-2xl p-2.5 sm:p-3 text-left flex flex-col justify-between gap-1.5 ${
       isCurrent && unlocked ? 'ring-2 ring-sky-400' : ''
     } ${unlocked ? '' : 'level-locked'}`;
 
@@ -348,14 +403,14 @@
       const freePreviewPill = lv.freePreview && !VS.Storage.isPackOwned(lv.premiumPackId)
         ? '<span class="mono text-[9px] font-extrabold px-1.5 py-0.5 rounded bg-emerald-500/20 text-emerald-300 border border-emerald-400/30 mr-1">FREE</span>'
         : '';
-      rightBadge = `<div class="flex items-center gap-0.5">${freePreviewPill}${[1, 2, 3].map((n) => renderStarSVG(n <= stars, 'w-3.5 h-3.5')).join('')}</div>`;
+      rightBadge = `<div class="flex items-center gap-0.5 shrink-0">${freePreviewPill}${[1, 2, 3].map((n) => renderStarSVG(n <= stars, 'w-3.5 h-3.5')).join('')}</div>`;
     } else if (lockInfo.reason === 'pack') {
-      rightBadge = `<span class="mono text-[10px] font-bold text-amber-300 flex items-center gap-1">
+      rightBadge = `<span class="mono text-[10px] font-bold text-amber-300 flex items-center gap-1 shrink-0">
         <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2.2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"/></svg>
         PACK
       </span>`;
     } else {
-      rightBadge = `<span class="mono text-[11px] font-bold text-amber-300 flex items-center gap-1">
+      rightBadge = `<span class="mono text-[11px] font-bold text-amber-300 flex items-center gap-1 shrink-0">
         <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2.2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"/></svg>
         ${lv.unlockStars}★
       </span>`;
@@ -367,15 +422,19 @@
         ? 'text-amber-300'
         : 'text-slate-400';
 
+    const diffSpan = Number.isFinite(lv.diff) ? `<span class="shrink-0">Diff ${lv.diff}</span>` : '';
+    const statusText = rec && rec.bestMoves ? `Best ${rec.bestMoves}` : (unlocked ? 'Ready' : 'Locked');
+
     btn.innerHTML = `
-      <div class="w-full flex items-center justify-between gap-1">
-        <span class="mono text-xs font-bold ${tagColor}">${tag}</span>
+      <div class="w-full flex items-center justify-between gap-1 min-w-0">
+        <span class="mono text-[11px] font-bold ${tagColor} truncate">${topLabel}</span>
         ${rightBadge}
       </div>
-      <div class="level-card-title font-bold text-sm text-white truncate w-full"></div>
-      <div class="text-[10px] text-slate-400 mono w-full flex justify-between">
-        <span>Par ${lv.par || '--'}</span>
-        <span>${rec && rec.bestMoves ? `Best ${rec.bestMoves}` : (unlocked ? 'Ready' : 'Locked')}</span>
+      <div class="level-card-title font-bold text-xs sm:text-sm text-white truncate w-full"></div>
+      <div class="text-[9.5px] sm:text-[10px] text-slate-400 mono w-full flex items-center justify-between gap-1">
+        ${diffSpan}
+        <span class="shrink-0">Par ${lv.par || '--'}</span>
+        <span class="truncate">${statusText}</span>
       </div>
     `;
     btn.querySelector('.level-card-title').textContent = lv.name;
@@ -386,8 +445,14 @@
         if (lockInfo.reason === 'pack') {
           const packMeta = VS.Levels.getPackMeta(lockInfo.packId);
           const packName = packMeta ? packMeta.name : 'this pack';
+          const priceLabel = packMeta
+            ? (caps.iap && VS.Monetization
+                ? VS.Monetization.getProductPrice(packMeta.productId, packMeta.defaultPrice)
+                : `${packMeta.fallbackCoinPrice} Coins`)
+            : 'Pack';
+          const coinInfo = packMeta && caps.iap ? ` or ${packMeta.fallbackCoinPrice} Coins` : '';
           showLevelLockToast(
-            `Unlock "${packName}" (or Go Pro) to play "${lv.name}". Level 1 is free to preview!`,
+            `Unlock "${packName}" (${priceLabel}${coinInfo}, or Go Pro) to play "${lv.name}".`,
             `Unlock ${packName}`,
             async () => {
               if (!VS.Monetization) return;
@@ -433,6 +498,45 @@
     return btn;
   }
 
+  function renderPaginationBar(container, totalCount, currentPage, onSelectPage) {
+    if (!container) return 0;
+    const totalPages = Math.max(1, Math.ceil(totalCount / PAGE_SIZE));
+    const safePage = Math.min(Math.max(0, currentPage), totalPages - 1);
+    container.innerHTML = '';
+
+    if (totalPages <= 1) {
+      container.classList.add('hidden');
+      return safePage;
+    }
+
+    container.classList.remove('hidden');
+    const colsClass = GRID_COLS_BY_COUNT[totalPages] || 'grid-cols-5';
+    container.className = `grid ${colsClass} gap-1.5 mb-2.5 shrink-0`;
+
+    for (let p = 0; p < totalPages; p++) {
+      const start = p * PAGE_SIZE + 1;
+      const end = Math.min(totalCount, (p + 1) * PAGE_SIZE);
+      const isActive = p === safePage;
+      const btn = global.document.createElement('button');
+      btn.type = 'button';
+      btn.dataset.page = String(p);
+      btn.className = isActive
+        ? 'mono rounded-xl py-1.5 px-1 text-[10px] sm:text-[11px] font-extrabold bg-sky-400 text-slate-950 transition text-center cursor-pointer'
+        : 'mono rounded-xl py-1.5 px-1 text-[10px] sm:text-[11px] font-bold bg-slate-900/75 text-slate-300 hover:text-white border border-slate-700/60 transition text-center cursor-pointer';
+      btn.textContent = `${start}–${end}`;
+      btn.addEventListener('click', () => onSelectPage(p));
+      container.appendChild(btn);
+    }
+
+    return safePage;
+  }
+
+  function handlePackUnlockResult(res, packName) {
+    if (res && !res.ok && res.reason === 'insufficient_coins') {
+      showLevelLockToast(`Need ${res.needed} more coins to unlock ${packName}!`);
+    }
+  }
+
   function renderPremiumPacksPanel(allLevels) {
     const panel = byId('premium-packs-panel');
     if (!panel || !VS.Levels.getPremiumPacks) return;
@@ -440,17 +544,22 @@
 
     const caps = VS.Monetization ? VS.Monetization.getCapabilities() : { iap: false };
     const packs = VS.Levels.getPremiumPacks();
+    if (packs.length === 0) return;
+
+    if (!packs.some((p) => p.id === activePremiumPackId)) {
+      activePremiumPackId = packs[0].id;
+    }
 
     if (!VS.Storage.isPro() && caps.iap) {
       const proPrice = VS.Monetization
         ? VS.Monetization.getProductPrice(VS.CONFIG.PRO_PRODUCT_ID, '$4.99')
         : '$4.99';
       const banner = global.document.createElement('div');
-      banner.className = 'rounded-2xl p-3 border border-amber-400/40 bg-amber-500/15 flex items-center justify-between gap-2';
+      banner.className = 'rounded-2xl p-3 border border-amber-400/40 bg-amber-500/15 flex items-center justify-between gap-2 shrink-0';
       banner.innerHTML = `
         <div class="min-w-0">
           <div class="text-xs font-extrabold text-amber-200">Pro Bundle — ${proPrice}</div>
-          <div class="text-[10px] text-amber-100/80">Both packs + No Ads + Prestige Set + 500 Coins</div>
+          <div class="text-[10px] text-amber-100/80">All 4 Packs (400 levels) + No Ads + Prestige Set + 500 Coins</div>
         </div>
         <button type="button" class="shrink-0 game-btn game-btn-gold rounded-xl px-3 py-1.5 text-[11px] font-extrabold">Go Pro</button>
       `;
@@ -461,69 +570,136 @@
       panel.appendChild(banner);
     }
 
+    const packMap = new Map();
+    const selectorGrid = global.document.createElement('div');
+    selectorGrid.className = 'grid grid-cols-2 sm:grid-cols-4 gap-1.5 shrink-0';
+
     packs.forEach((pack) => {
-      const owned = VS.Storage.isPackOwned(pack.id);
-      const packLevels = allLevels
+      const packItems = allLevels
         .map((lv, globalIdx) => ({ lv, globalIdx }))
         .filter((item) => item.lv.premiumPackId === pack.id);
+      const clearedCount = packItems.filter(({ lv }) => {
+        const rec = VS.Storage.getLevelRecord(lv.id);
+        return rec && rec.stars > 0;
+      }).length;
+      const owned = VS.Storage.isPackOwned(pack.id);
+      packMap.set(pack.id, { pack, packItems, clearedCount, owned });
 
-      const section = global.document.createElement('div');
-      section.className = 'bg-slate-900/70 rounded-2xl p-3.5 border border-slate-700/70';
+      const isSelected = pack.id === activePremiumPackId;
+      const pill = global.document.createElement('button');
+      pill.type = 'button';
+      pill.dataset.packPill = pack.id;
+      pill.className = isSelected
+        ? 'rounded-xl py-1.5 px-2 text-center transition cursor-pointer bg-amber-400 text-slate-950 font-extrabold shadow-sm min-w-0'
+        : 'rounded-xl py-1.5 px-2 text-center transition cursor-pointer bg-slate-900/75 text-slate-200 hover:text-white border border-slate-700/60 font-bold min-w-0';
+      pill.innerHTML = `
+        <div class="text-[11px] leading-tight truncate">${pack.shortName || pack.name}</div>
+        <div class="mono text-[9px] leading-tight mt-0.5 ${isSelected ? 'text-slate-900/80' : (owned ? 'text-emerald-300' : 'text-slate-400')}">${owned ? '✓' : '🔒'} ${clearedCount}/${packItems.length}</div>
+      `;
+      pill.addEventListener('click', () => setActivePremiumPack(pack.id));
+      selectorGrid.appendChild(pill);
+    });
+    panel.appendChild(selectorGrid);
 
-      const header = global.document.createElement('div');
-      header.className = 'flex items-start justify-between gap-2 mb-3';
+    const activeData = packMap.get(activePremiumPackId);
+    if (!activeData) return;
+    const { pack, packItems, clearedCount, owned } = activeData;
 
-      const priceLabel = caps.iap
-        ? (VS.Monetization ? VS.Monetization.getProductPrice(pack.productId, pack.defaultPrice) : pack.defaultPrice)
-        : `${pack.fallbackCoinPrice} Coins`;
+    const section = global.document.createElement('div');
+    section.className = 'bg-slate-900/70 rounded-2xl p-3 border border-slate-700/70 flex flex-col gap-2.5';
 
-      header.innerHTML = `
+    const header = global.document.createElement('div');
+    header.className = 'flex flex-col gap-2';
+
+    const priceLabel = caps.iap
+      ? (VS.Monetization ? VS.Monetization.getProductPrice(pack.productId, pack.defaultPrice) : pack.defaultPrice)
+      : `${pack.fallbackCoinPrice} Coins`;
+
+    header.innerHTML = `
+      <div class="flex items-start justify-between gap-2 flex-wrap">
         <div class="min-w-0">
-          <div class="flex items-center gap-2 flex-wrap">
+          <div class="flex items-center gap-1.5 flex-wrap">
             <h3 class="text-sm font-extrabold text-white"></h3>
             <span class="mono text-[10px] font-bold px-2 py-0.5 rounded-full bg-slate-800 text-slate-300 border border-slate-700">${pack.difficulty}</span>
+            <span class="mono text-[10px] font-bold px-2 py-0.5 rounded-full bg-sky-500/15 text-sky-300 border border-sky-400/30">${clearedCount}/${packItems.length} cleared</span>
           </div>
           <p class="text-[11px] text-slate-400 mt-0.5"></p>
         </div>
-        <div class="shrink-0"></div>
-      `;
-      header.querySelector('h3').textContent = pack.name;
-      header.querySelector('p').textContent = pack.subtitle;
+        <div class="pack-actions flex items-center gap-1.5 flex-wrap shrink-0"></div>
+      </div>
+    `;
+    header.querySelector('h3').textContent = pack.name;
+    header.querySelector('p').textContent = pack.subtitle;
 
-      const actionWrap = header.querySelector('div.shrink-0');
-      if (owned) {
-        const badge = global.document.createElement('span');
-        badge.className = 'mono text-[10px] font-extrabold px-2.5 py-1 rounded-full bg-emerald-500/20 text-emerald-300 border border-emerald-400/30 inline-block';
-        badge.textContent = VS.Storage.isPro() ? 'PRO UNLOCKED' : 'OWNED';
-        actionWrap.appendChild(badge);
-      } else {
-        const buyBtn = global.document.createElement('button');
-        buyBtn.className = 'game-btn game-btn-gold rounded-xl px-2.5 py-1.5 text-[11px] font-extrabold';
-        buyBtn.textContent = `Unlock ${priceLabel}`;
-        buyBtn.addEventListener('click', async () => {
-          if (!VS.Monetization) return;
-          const res = await VS.Monetization.purchasePack(pack.id);
-          if (res && !res.ok && res.reason === 'insufficient_coins') {
-            showLevelLockToast(`Need ${res.needed} more coins to unlock ${pack.name}!`);
-          }
-        });
-        actionWrap.appendChild(buyBtn);
-      }
-
-      section.appendChild(header);
-
-      const grid = global.document.createElement('div');
-      grid.className = 'grid grid-cols-2 gap-2';
-      packLevels.forEach(({ lv, globalIdx }) => {
-        grid.appendChild(createLevelCard(lv, globalIdx));
+    const actionWrap = header.querySelector('.pack-actions');
+    if (owned) {
+      const badge = global.document.createElement('span');
+      badge.className = 'mono text-[10px] font-extrabold px-2.5 py-1 rounded-full bg-emerald-500/20 text-emerald-300 border border-emerald-400/30 inline-block';
+      badge.textContent = VS.Storage.isPro() ? 'PRO UNLOCKED' : 'OWNED';
+      actionWrap.appendChild(badge);
+    } else if (caps.iap) {
+      const buyBtn = global.document.createElement('button');
+      buyBtn.type = 'button';
+      buyBtn.className = 'game-btn game-btn-gold rounded-xl px-2.5 py-1.5 text-[11px] font-extrabold';
+      buyBtn.textContent = `Unlock ${priceLabel}`;
+      buyBtn.addEventListener('click', async () => {
+        if (!VS.Monetization) return;
+        const res = await VS.Monetization.purchasePack(pack.id);
+        handlePackUnlockResult(res, pack.name);
       });
-      section.appendChild(grid);
-      panel.appendChild(section);
+      actionWrap.appendChild(buyBtn);
+
+      const coinBtn = global.document.createElement('button');
+      coinBtn.type = 'button';
+      coinBtn.className = 'game-btn rounded-xl px-2.5 py-1.5 text-[11px] font-bold text-amber-200';
+      coinBtn.textContent = `${pack.fallbackCoinPrice} Coins`;
+      coinBtn.addEventListener('click', async () => {
+        if (!VS.Monetization) return;
+        const res = await VS.Monetization.purchasePack(pack.id, { useCoins: true });
+        handlePackUnlockResult(res, pack.name);
+      });
+      actionWrap.appendChild(coinBtn);
+    } else {
+      const coinBtn = global.document.createElement('button');
+      coinBtn.type = 'button';
+      coinBtn.className = 'game-btn game-btn-gold rounded-xl px-2.5 py-1.5 text-[11px] font-extrabold';
+      coinBtn.textContent = `Unlock ${pack.fallbackCoinPrice} Coins`;
+      coinBtn.addEventListener('click', async () => {
+        if (!VS.Monetization) return;
+        const res = await VS.Monetization.purchasePack(pack.id, { useCoins: true });
+        handlePackUnlockResult(res, pack.name);
+      });
+      actionWrap.appendChild(coinBtn);
+    }
+
+    section.appendChild(header);
+
+    const pageBar = global.document.createElement('div');
+    const safePage = renderPaginationBar(
+      pageBar,
+      packItems.length,
+      packPages[pack.id] || 0,
+      (p) => setPackPage(pack.id, p)
+    );
+    packPages[pack.id] = safePage;
+    if (!pageBar.classList.contains('hidden')) {
+      pageBar.classList.remove('mb-2.5');
+      section.appendChild(pageBar);
+    }
+
+    const grid = global.document.createElement('div');
+    grid.className = 'grid grid-cols-2 gap-2';
+    const pageSlice = packItems.slice(safePage * PAGE_SIZE, (safePage + 1) * PAGE_SIZE);
+    pageSlice.forEach(({ lv, globalIdx }) => {
+      grid.appendChild(createLevelCard(lv, globalIdx));
     });
+    section.appendChild(grid);
+    panel.appendChild(section);
   }
 
   function renderLevelGrid() {
     const grid = byId('level-grid');
+    const paginationEl = byId('level-pagination');
     const premiumPanel = byId('premium-packs-panel');
     const importPanel = byId('import-panel');
     hideLevelLockToast();
@@ -538,8 +714,8 @@
       if (!el) return;
       el.className =
         key === activePackTab
-          ? 'pack-tab rounded-xl py-1.5 text-[11px] font-bold transition text-slate-950 bg-sky-400'
-          : `pack-tab rounded-xl py-1.5 text-[11px] font-bold transition ${key === 'premium' ? 'text-amber-300' : 'text-slate-300'} hover:text-white`;
+          ? 'pack-tab rounded-xl py-1.5 px-1 text-[10px] sm:text-[11px] leading-tight font-bold transition text-slate-950 bg-sky-400 flex items-center justify-center text-center min-w-0'
+          : `pack-tab rounded-xl py-1.5 px-1 text-[10px] sm:text-[11px] leading-tight font-bold transition ${key === 'premium' ? 'text-amber-300' : 'text-slate-300'} hover:text-white flex items-center justify-center text-center min-w-0`;
     });
 
     const allLevels = VS.Levels.getAll();
@@ -551,8 +727,9 @@
 
     byId('levels-star-badge').textContent = `★ ${totalStars} / ${VS.Storage.getMaxStars()}`;
     byId('level-progress-text').textContent =
-      `${totalDone} of ${allLevels.length} cleared • Collect stars to unlock more`;
+      `${totalDone} of ${allLevels.length} cleared • Earn stars & Voxel Coins`;
 
+    if (paginationEl) paginationEl.classList.add('hidden');
     grid.classList.add('hidden');
     if (premiumPanel) {
       premiumPanel.classList.add('hidden');
@@ -587,7 +764,16 @@
           : item.lv.pack === 'starter'
       );
 
-    filtered.forEach(({ lv, globalIdx }) => {
+    const safePage = renderPaginationBar(
+      paginationEl,
+      filtered.length,
+      packPages[activePackTab] || 0,
+      (p) => setPackPage(activePackTab, p)
+    );
+    packPages[activePackTab] = safePage;
+
+    const pageItems = filtered.slice(safePage * PAGE_SIZE, (safePage + 1) * PAGE_SIZE);
+    pageItems.forEach(({ lv, globalIdx }) => {
       grid.appendChild(createLevelCard(lv, globalIdx));
     });
   }
@@ -877,7 +1063,7 @@
     statusEl.textContent = `Loaded ${parsed.length} custom level${parsed.length > 1 ? 's' : ''}!`;
     statusEl.className = 'text-xs text-emerald-400 min-h-[1rem]';
 
-    activePackTab = 'classic';
+    focusLevelInSelector(VS.Levels.get(firstNewIdx));
     renderLevelGrid();
     VS.Game.loadLevel(firstNewIdx);
     closeMainMenu();
@@ -949,6 +1135,9 @@
     updateHintVisibility,
     renderStarSVG,
     setActivePackTab,
+    setActivePremiumPack,
+    setPackPage,
+    openLevelSelectForLevel,
     openLevelSelectForCurrentPack,
     renderLevelGrid,
     openShop,

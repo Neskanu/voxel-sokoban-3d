@@ -446,12 +446,7 @@
         VS.Game.loadLevel(nextIdx);
       } else {
         VS.UI.hideModal('modal-win');
-        if (nextLv.premiumPackId) {
-          VS.UI.setActivePackTab('premium');
-        } else {
-          VS.UI.setActivePackTab(nextLv.pack === 'starter' ? 'starter' : 'classic');
-        }
-        VS.UI.showModal('modal-levels');
+        VS.UI.openLevelSelectForLevel(nextLv);
       }
     });
   }

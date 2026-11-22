@@ -5,669 +5,93 @@
 
   // Legend: '#' = Wall, '.' = Target Pad, '$' = Crate, '@' = Player,
   //         '*' = Crate on Target, '+' = Player on Target, ' ' = Floor
-  const STARTER_LEVELS = [
-    {
-      id: 'starter-1',
-      pack: 'starter',
-      name: 'First Steps',
-      par: 10,
-      unlockStars: 0,
-      map: [
-        '#########',
-        '#   .   #',
-        '#   $   #',
-        '# .$@$. #',
-        '#   $   #',
-        '#   .   #',
-        '#########'
-      ]
-    },
-    {
-      id: 'starter-2',
-      pack: 'starter',
-      name: 'Corner Pocket',
-      par: 26,
-      unlockStars: 0,
-      map: [
-        '######',
-        '#    #',
-        '# @$ #',
-        '# $. #',
-        '#  . #',
-        '######'
-      ]
-    },
-    {
-      id: 'starter-3',
-      pack: 'starter',
-      name: 'Order Matters',
-      par: 24,
-      unlockStars: 0,
-      map: [
-        '#######',
-        '#  .  #',
-        '# #$# #',
-        '# .@$ #',
-        '# #$# #',
-        '#  .  #',
-        '#######'
-      ]
-    },
-    {
-      id: 'starter-4',
-      pack: 'starter',
-      name: 'The Vault',
-      par: 32,
-      unlockStars: 2,
-      map: [
-        '########',
-        '#   .  #',
-        '#  #$# #',
-        '#  $@  #',
-        '#  #$# #',
-        '#  ..  #',
-        '########'
-      ]
-    },
-    {
-      id: 'starter-5',
-      pack: 'starter',
-      name: 'Crossroads',
-      par: 38,
-      unlockStars: 4,
-      map: [
-        '########',
-        '#  ..  #',
-        '#  $$  #',
-        '# #  # #',
-        '# $@$  #',
-        '#  ..  #',
-        '########'
-      ]
-    },
-    {
-      id: 'starter-6',
-      pack: 'starter',
-      name: 'Grand Courtyard',
-      par: 44,
-      unlockStars: 6,
-      map: [
-        '#########',
-        '#   #   #',
-        '# $ . $ #',
-        '#  ###  #',
-        '# . @ . #',
-        '#  $ $  #',
-        '#   .   #',
-        '#########'
-      ]
-    }
-  ];
+  const FREE_PACKS = new Set(['starter', 'classic']);
 
-  const CLASSIC_LEVELS = [
-    {
-      id: 'classic-1',
-      pack: 'classic',
-      name: 'Warehouse 1982',
-      par: 230,
-      unlockStars: 0,
-      map: [
-        '    #####          ',
-        '    #   #          ',
-        '    #$  #          ',
-        '  ###  $##         ',
-        '  #  $ $ #         ',
-        '### # ## #   ######',
-        '#   # ## #####  ..#',
-        '# $  $          ..#',
-        '##### ### #@##  ..#',
-        '    #     #########',
-        '    #######        '
-      ]
-    },
-    {
-      id: 'classic-2',
-      pack: 'classic',
-      name: 'Twin Alcoves',
-      par: 42,
-      unlockStars: 0,
-      map: [
-        '  #####',
-        '  #   #',
-        '### $ #',
-        '#  $  #',
-        '# # $ #',
-        '# ... #',
-        '#  @  #',
-        '#######'
-      ]
-    },
-    {
-      id: 'classic-3',
-      pack: 'classic',
-      name: 'The Narrow Hall',
-      par: 34,
-      unlockStars: 0,
-      map: [
-        '########',
-        '#   ...#',
-        '# $$#$ #',
-        '#  @   #',
-        '#   #  #',
-        '########'
-      ]
-    },
-    {
-      id: 'classic-4',
-      pack: 'classic',
-      name: 'Boxcar Switch',
-      par: 32,
-      unlockStars: 4,
-      map: [
-        '#######',
-        '#  .  #',
-        '# $#$ #',
-        '# .@. #',
-        '#  $  #',
-        '#     #',
-        '#######'
-      ]
-    },
-    {
-      id: 'classic-5',
-      pack: 'classic',
-      name: 'Loading Dock',
-      par: 48,
-      unlockStars: 4,
-      map: [
-        '#########',
-        '#       #',
-        '# $ # $ #',
-        '#  ...  #',
-        '#   @   #',
-        '#   .   #',
-        '# $ # $ #',
-        '#       #',
-        '#########'
-      ]
-    },
-    {
-      id: 'classic-6',
-      pack: 'classic',
-      name: 'L-Shaped Storage',
-      par: 46,
-      unlockStars: 4,
-      map: [
-        '######  ',
-        '#    #  ',
-        '# $$ #  ',
-        '# @# ###',
-        '## #   #',
-        ' # $...#',
-        ' #     #',
-        ' #######'
-      ]
-    },
-    {
-      id: 'classic-7',
-      pack: 'classic',
-      name: 'Double Lock',
-      par: 54,
-      unlockStars: 9,
-      map: [
-        '  ######',
-        '  #    #',
-        '###  # #',
-        '#  $ $ #',
-        '#  ..@ #',
-        '#  ..# #',
-        '###$$  #',
-        '  #    #',
-        '  ######'
-      ]
-    },
-    {
-      id: 'classic-8',
-      pack: 'classic',
-      name: 'The Corridor',
-      par: 68,
-      unlockStars: 9,
-      map: [
-        '##########',
-        '#   #    #',
-        '# $  $ $ #',
-        '#  ###   #',
-        '#  ...#@ #',
-        '#   . $  #',
-        '##########'
-      ]
-    },
-    {
-      id: 'classic-9',
-      pack: 'classic',
-      name: 'Four Corners',
-      par: 56,
-      unlockStars: 9,
-      map: [
-        '#########',
-        '#.  #  .#',
-        '# $   $ #',
-        '#   #   #',
-        '##  @  ##',
-        '#   #   #',
-        '# $   $ #',
-        '#.  #  .#',
-        '#########'
-      ]
-    },
-    {
-      id: 'classic-10',
-      pack: 'classic',
-      name: 'The Pillar Room',
-      par: 44,
-      unlockStars: 15,
-      map: [
-        '  #######  ',
-        '  #  .  #  ',
-        '###  $  ###',
-        '#  #. .#  #',
-        '#  $ @ $  #',
-        '#    $    #',
-        '#### . ####',
-        '   #####   '
-      ]
-    },
-    {
-      id: 'classic-11',
-      pack: 'classic',
-      name: 'Zigzag Express',
-      par: 58,
-      unlockStars: 15,
-      map: [
-        '#######',
-        '#...  #',
-        '#  #  #',
-        '#  #$ #',
-        '## $  #',
-        ' # $@ #',
-        ' #    #',
-        ' ######'
-      ]
-    },
-    {
-      id: 'classic-12',
-      pack: 'classic',
-      name: 'Central Depot',
-      par: 62,
-      unlockStars: 15,
-      map: [
-        '#########',
-        '#   .   #',
-        '#  #$#  #',
-        '#  $ $  #',
-        '#. .@. .#',
-        '#  $ $  #',
-        '#   #   #',
-        '#       #',
-        '#########'
-      ]
-    },
-    {
-      id: 'classic-13',
-      pack: 'classic',
-      name: 'Twin Chambers',
-      par: 76,
-      unlockStars: 22,
-      map: [
-        '###########',
-        '#    #    #',
-        '# $$ # .. #',
-        '#  @ # .. #',
-        '#  $   $  #',
-        '#    #    #',
-        '###########'
-      ]
-    },
-    {
-      id: 'classic-14',
-      pack: 'classic',
-      name: 'The Spiral',
-      par: 160,
-      unlockStars: 22,
-      map: [
-        '##########',
-        '#   .... #',
-        '#  ##### #',
-        '#  #   # #',
-        '#  #$@$# #',
-        '#  #   # #',
-        '#   $ $  #',
-        '#        #',
-        '##########'
-      ]
-    },
-    {
-      id: 'classic-15',
-      pack: 'classic',
-      name: 'The Crossvault',
-      par: 84,
-      unlockStars: 22,
-      map: [
-        '   #####   ',
-        '   # . #   ',
-        '   # . #   ',
-        '####   ####',
-        '#   $ $   #',
-        '#  # @ #  #',
-        '#   $ $   #',
-        '####   ####',
-        '   # . #   ',
-        '   # . #   ',
-        '   #####   '
-      ]
-    },
-    {
-      id: 'classic-16',
-      pack: 'classic',
-      name: 'Warehouse Alley',
-      par: 72,
-      unlockStars: 30,
-      map: [
-        '##########',
-        '#   #    #',
-        '# $ # .. #',
-        '# $   .. #',
-        '# $    . #',
-        '# @ # $$ #',
-        '#        #',
-        '##########'
-      ]
-    },
-    {
-      id: 'classic-17',
-      pack: 'classic',
-      name: 'The Keystone',
-      par: 48,
-      unlockStars: 30,
-      map: [
-        '   #######   ',
-        '   #  .  #   ',
-        '### $ * $ ###',
-        '#   . @ .   #',
-        '#   $ . $   #',
-        '#     #     #',
-        '#############'
-      ]
-    },
-    {
-      id: 'classic-18',
-      pack: 'classic',
-      name: 'Grand Warehouse',
-      par: 120,
-      unlockStars: 30,
-      map: [
-        '############',
-        '#   #      #',
-        '# $ #  $$  #',
-        '# $  #     #',
-        '# @#   ##  #',
-        '# $  #   ..#',
-        '#   $    ..#',
-        '#        ..#',
-        '############'
-      ]
-    }
-  ];
+  const PACK_PREFIXES = {
+    starter: 'S',
+    classic: 'C',
+    'neon-vault': 'N',
+    'frost-citadel': 'F',
+    'sandstone-labyrinth': 'D',
+    grandmaster: 'G',
+    custom: 'X'
+  };
 
   const PREMIUM_PACKS = {
     'neon-vault': {
       id: 'neon-vault',
       productId: 'pack_neon_vault',
       name: 'Neon Vault',
-      subtitle: '6 tactical cyber-warehouse puzzles',
+      shortName: 'Neon Vault',
+      subtitle: '100 tactical cyber-warehouse puzzles',
       difficulty: 'Medium-Hard',
       defaultPrice: '$1.99',
-      fallbackCoinPrice: 450,
+      fallbackCoinPrice: 600,
       accent: 'sky'
+    },
+    'frost-citadel': {
+      id: 'frost-citadel',
+      productId: 'pack_frost_citadel',
+      name: 'Frost Citadel',
+      shortName: 'Frost Citadel',
+      subtitle: '100 precision ice-corridor challenges',
+      difficulty: 'Hard',
+      defaultPrice: '$2.49',
+      fallbackCoinPrice: 900,
+      accent: 'cyan'
+    },
+    'sandstone-labyrinth': {
+      id: 'sandstone-labyrinth',
+      productId: 'pack_sandstone_labyrinth',
+      name: 'Sandstone Labyrinth',
+      shortName: 'Sandstone',
+      subtitle: '100 tight desert-temple puzzle vaults',
+      difficulty: 'Expert',
+      defaultPrice: '$2.99',
+      fallbackCoinPrice: 1200,
+      accent: 'orange'
     },
     grandmaster: {
       id: 'grandmaster',
       productId: 'pack_grandmaster',
       name: 'Grandmaster',
-      subtitle: '6 deep multi-stage logic chambers',
-      difficulty: 'Expert',
-      defaultPrice: '$2.99',
-      fallbackCoinPrice: 600,
+      shortName: 'Grandmaster',
+      subtitle: '100 deep multi-stage logic chambers',
+      difficulty: 'Grandmaster',
+      defaultPrice: '$3.49',
+      fallbackCoinPrice: 1500,
       accent: 'amber'
     }
   };
 
-  const NEON_VAULT_LEVELS = [
-    {
-      id: 'neon-vault-1',
-      pack: 'neon-vault',
-      premiumPackId: 'neon-vault',
-      freePreview: true,
-      name: 'Circuit Entry',
-      par: 22,
-      unlockStars: 0,
-      map: [
-        '########',
-        '#  .   #',
-        '# #$$# #',
-        '# . @. #',
-        '#  $   #',
-        '#      #',
-        '########'
-      ]
-    },
-    {
-      id: 'neon-vault-2',
-      pack: 'neon-vault',
-      premiumPackId: 'neon-vault',
-      freePreview: false,
-      name: 'Relay Chamber',
-      par: 24,
-      unlockStars: 0,
-      map: [
-        '########',
-        '#  ..  #',
-        '# #$ # #',
-        '#  $@  #',
-        '#  $#  #',
-        '#  .   #',
-        '########'
-      ]
-    },
-    {
-      id: 'neon-vault-3',
-      pack: 'neon-vault',
-      premiumPackId: 'neon-vault',
-      freePreview: false,
-      name: 'Data Spine',
-      par: 26,
-      unlockStars: 0,
-      map: [
-        '#########',
-        '# .   . #',
-        '# #$ $# #',
-        '#   @   #',
-        '# #$ $# #',
-        '# .   . #',
-        '#########'
-      ]
-    },
-    {
-      id: 'neon-vault-4',
-      pack: 'neon-vault',
-      premiumPackId: 'neon-vault',
-      freePreview: false,
-      name: 'Mirror Vault',
-      par: 28,
-      unlockStars: 0,
-      map: [
-        '#########',
-        '#  ...  #',
-        '# # # # #',
-        '#  $$$  #',
-        '#   @   #',
-        '#  # #  #',
-        '#       #',
-        '#########'
-      ]
-    },
-    {
-      id: 'neon-vault-5',
-      pack: 'neon-vault',
-      premiumPackId: 'neon-vault',
-      freePreview: false,
-      name: 'Double Pivot',
-      par: 28,
-      unlockStars: 0,
-      map: [
-        '########',
-        '#  .   #',
-        '# #$ # #',
-        '#  $@$ #',
-        '# # .# #',
-        '#  .   #',
-        '########'
-      ]
-    },
-    {
-      id: 'neon-vault-6',
-      pack: 'neon-vault',
-      premiumPackId: 'neon-vault',
-      freePreview: false,
-      name: 'Laser Bypass',
-      par: 34,
-      unlockStars: 0,
-      map: [
-        '#########',
-        '#   #   #',
-        '# $ . $ #',
-        '# # # # #',
-        '# . @ . #',
-        '#   $   #',
-        '#   #   #',
-        '#########'
-      ]
-    }
-  ];
+  const packCounters = {};
 
-  const GRANDMASTER_LEVELS = [
-    {
-      id: 'grandmaster-1',
-      pack: 'grandmaster',
-      premiumPackId: 'grandmaster',
-      freePreview: true,
-      name: 'Iron Sluice',
-      par: 30,
-      unlockStars: 0,
-      map: [
-        '#########',
-        '#   #   #',
-        '# $ . $ #',
-        '#  ###  #',
-        '# . @ . #',
-        '#   $   #',
-        '#  #    #',
-        '#########'
-      ]
-    },
-    {
-      id: 'grandmaster-2',
-      pack: 'grandmaster',
-      premiumPackId: 'grandmaster',
-      freePreview: false,
-      name: 'Switchyard',
-      par: 32,
-      unlockStars: 0,
-      map: [
-        '##########',
-        '#   ..   #',
-        '#  #$$#  #',
-        '#  $@ $  #',
-        '#  #..#  #',
-        '#        #',
-        '##########'
-      ]
-    },
-    {
-      id: 'grandmaster-3',
-      pack: 'grandmaster',
-      premiumPackId: 'grandmaster',
-      freePreview: false,
-      name: 'Split Symmetry',
-      par: 38,
-      unlockStars: 0,
-      map: [
-        '########',
-        '# .  . #',
-        '#  $$  #',
-        '# ## # #',
-        '#  @$  #',
-        '#   .  #',
-        '########'
-      ]
-    },
-    {
-      id: 'grandmaster-4',
-      pack: 'grandmaster',
-      premiumPackId: 'grandmaster',
-      freePreview: false,
-      name: 'Citadel Lock',
-      par: 42,
-      unlockStars: 0,
-      map: [
-        '#########',
-        '#  ...  #',
-        '#  # #  #',
-        '# $$@$  #',
-        '#   #   #',
-        '#       #',
-        '#########'
-      ]
-    },
-    {
-      id: 'grandmaster-5',
-      pack: 'grandmaster',
-      premiumPackId: 'grandmaster',
-      freePreview: false,
-      name: 'Obsidian Heart',
-      par: 52,
-      unlockStars: 0,
-      map: [
-        '#########',
-        '#  ...  #',
-        '# #   # #',
-        '#  #$#  #',
-        '#  $@$  #',
-        '#       #',
-        '#########'
-      ]
-    },
-    {
-      id: 'grandmaster-6',
-      pack: 'grandmaster',
-      premiumPackId: 'grandmaster',
-      freePreview: false,
-      name: 'Vault Helix',
-      par: 60,
-      unlockStars: 0,
-      map: [
-        '#########',
-        '# ...   #',
-        '# ### # #',
-        '#   $$  #',
-        '# # $@# #',
-        '#       #',
-        '#########'
-      ]
-    }
-  ];
+  function hydrateLevel(entry, idx) {
+    const isFree = FREE_PACKS.has(entry.pack);
+    const map = Array.isArray(entry.map)
+      ? entry.map.slice()
+      : String(entry.map || '').split('|');
+    const packNum = (packCounters[entry.pack] || 0) + 1;
+    packCounters[entry.pack] = packNum;
 
-  let levels = [...CLASSIC_LEVELS, ...STARTER_LEVELS, ...NEON_VAULT_LEVELS, ...GRANDMASTER_LEVELS];
+    return {
+      id: entry.id,
+      pack: entry.pack,
+      name: entry.name,
+      par: entry.par,
+      diff: entry.diff,
+      crates: entry.crates,
+      map,
+      rank: idx + 1,
+      packIndex: packNum,
+      unlockStars: 0,
+      premiumPackId: isFree ? null : entry.pack,
+      freePreview: false
+    };
+  }
+
+  const rawData = Array.isArray(VS.LEVEL_DATA) ? VS.LEVEL_DATA : [];
+  let levels = rawData.map(hydrateLevel);
 
   function getAll() {
     return levels;
@@ -683,7 +107,20 @@
 
   function addCustomLevels(customList) {
     const startIdx = levels.length;
-    levels = [...levels, ...customList];
+    const prepared = (customList || []).map((lv) => {
+      const pack = lv.pack || 'custom';
+      const packNum = (packCounters[pack] || 0) + 1;
+      packCounters[pack] = packNum;
+      return Object.assign({}, lv, {
+        pack,
+        rank: null,
+        packIndex: packNum,
+        unlockStars: 0,
+        premiumPackId: null,
+        freePreview: false
+      });
+    });
+    levels = [...levels, ...prepared];
     return startIdx;
   }
 
@@ -697,16 +134,12 @@
 
   function getLevelTag(level) {
     if (!level) return '';
+    const prefix = PACK_PREFIXES[level.pack] || 'L';
+    if (Number.isFinite(level.packIndex) && level.packIndex > 0) {
+      return `${prefix}${level.packIndex}`;
+    }
     const packLevels = levels.filter((l) => l.pack === level.pack);
     const num = packLevels.findIndex((l) => l.id === level.id) + 1;
-    const prefixMap = {
-      classic: 'C',
-      starter: 'S',
-      'neon-vault': 'N',
-      grandmaster: 'G',
-      custom: 'X'
-    };
-    const prefix = prefixMap[level.pack] || 'L';
     return `${prefix}${num}`;
   }
 
@@ -752,6 +185,7 @@
           pack: 'custom',
           name: pendingTitle || `Custom #${parsed.length + 1}`,
           par: Math.max(18, crates * 14),
+          crates,
           unlockStars: 0,
           map: normalized
         });

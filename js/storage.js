@@ -142,15 +142,20 @@
     return Boolean(saveData.economy.isPro || saveData.economy.ownedPacks.includes(packId));
   }
 
+  const FREE_PACK_IDS = new Set(['starter', 'classic', 'custom']);
+
   function getLevelLockInfo(level) {
     if (!level || level.pack === 'custom') {
       return { unlocked: true, reason: null };
     }
-    if (level.premiumPackId) {
-      if (level.freePreview || isPackOwned(level.premiumPackId)) {
+    const packId =
+      level.premiumPackId ||
+      (level.pack && !FREE_PACK_IDS.has(level.pack) ? level.pack : null);
+    if (packId) {
+      if (level.freePreview || isPackOwned(packId)) {
         return { unlocked: true, reason: null };
       }
-      return { unlocked: false, reason: 'pack', packId: level.premiumPackId };
+      return { unlocked: false, reason: 'pack', packId };
     }
     if (saveData.economy.isPro || saveData.economy.adUnlockedLevels.includes(level.id)) {
       return { unlocked: true, reason: null };
