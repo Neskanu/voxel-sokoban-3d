@@ -42,7 +42,7 @@
         VS.UI.openMainMenu();
       }
     } catch (err) {
-      console.error('Failed to initialize Voxel Sokoban 3D:', err);
+      console.error('Failed to initialize Crate Expectations:', err);
       if (VS.Platform) VS.Platform.loadingStop();
       if (VS.Loader) {
         VS.Loader.showError(err && err.message ? err.message : 'Failed to initialize game.');

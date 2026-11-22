@@ -1,5 +1,5 @@
 /* =========================================================================
-   VOXEL SOKOBAN 3D - STYLESHEET
+   CRATE EXPECTATIONS - STYLESHEET
    ========================================================================= */
 
 /* 1. CSS Variables & Base Reset */
@@ -58,6 +58,11 @@ canvas {
 
 .modal-card.glass-panel {
   background: rgba(15, 23, 42, 0.92);
+}
+
+#modal-menu .modal-card.glass-panel {
+  background: linear-gradient(180deg, rgba(51, 65, 85, 0.88) 0%, rgba(30, 41, 59, 0.92) 100%);
+  border-color: rgba(255, 255, 255, 0.18);
 }
 
 .game-btn {

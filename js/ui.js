@@ -161,7 +161,7 @@
     const earned = VS.Storage.getTotalStars();
     const maxS = VS.Storage.getMaxStars();
     const coins = VS.Storage.getCoins();
-    byId('menu-stars').textContent = `★ ${earned}/${maxS}`;
+    byId('menu-stars').textContent = `${earned}/${maxS}`;
     byId('menu-score').textContent = VS.Storage.getTotalScore().toLocaleString();
     if (byId('menu-coins')) byId('menu-coins').textContent = coins.toLocaleString();
     byId('btn-menu-play-label').textContent = earned > 0 ? 'Continue' : 'Play';

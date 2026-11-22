@@ -458,6 +458,14 @@
         VS.Renderer.refreshPlayerMesh(bot.accessory);
       }
     }
+
+    if (typeof global.__renderVoxelWordmarks === 'function') {
+      global.__renderVoxelWordmarks({
+        themeId: theme ? theme.id : undefined,
+        botId: bot ? bot.id : undefined,
+        force: true
+      });
+    }
   }
 
   VS.Cosmetics = {

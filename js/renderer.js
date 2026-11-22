@@ -100,8 +100,8 @@
     const usableW = visH * camera.aspect * 0.86;
     const usableD = (visH / Math.max(Math.sin(state.camPitch), 0.35)) * 0.74;
 
-    const cosY = Math.abs(Math.cos(state.camYaw));
-    const sinY = Math.abs(Math.sin(state.camYaw));
+    const cosY = Math.abs(Math.cos(state.camTargetYaw));
+    const sinY = Math.abs(Math.sin(state.camTargetYaw));
     const mapW = state.gridWidth * cosY + state.gridHeight * sinY;
     const mapD = state.gridWidth * sinY + state.gridHeight * cosY;
 
@@ -363,7 +363,10 @@
       state.camYaw += (state.camTargetYaw - state.camYaw) * Math.min(1, dt * 10);
     }
 
-    if (state.camAutoFollow) {
+    if (state.menuOpen || introActive) {
+      state.camTargetX = 0;
+      state.camTargetZ = 0;
+    } else if (state.camAutoFollow) {
       if (isWholeMapVisible()) {
         state.camTargetX = 0;
         state.camTargetZ = 0;

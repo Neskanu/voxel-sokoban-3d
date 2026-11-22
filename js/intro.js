@@ -20,7 +20,7 @@
 
   const BEATS = [
     {
-      title: 'Voxel Sokoban 3D',
+      title: 'Crate Expectations',
       subtitle: '500 verified 3D voxel puzzle dioramas — from warmups to grandmaster vaults.'
     },
     {
@@ -242,7 +242,7 @@
     introOrbiting = false;
 
     // Hide any open modals and HUD cleanly
-    ['modal-menu', 'modal-settings', 'modal-levels', 'modal-shop', 'modal-pro', 'modal-win'].forEach((id) => {
+    ['modal-menu', 'modal-settings', 'modal-levels', 'modal-shop', 'modal-win'].forEach((id) => {
       if (VS.UI) VS.UI.hideModal(id);
     });
     VS.Game.state.menuOpen = false;

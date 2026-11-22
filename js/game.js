@@ -101,7 +101,7 @@
     const settings = VS.Storage.getSettings();
     state.camAutoFollow = settings.autoFollow;
 
-    if (VS.Renderer.isWholeMapVisible() || !state.camAutoFollow) {
+    if (state.menuOpen || VS.Renderer.isWholeMapVisible() || !state.camAutoFollow) {
       state.camLookX = state.camTargetX = 0;
       state.camLookZ = state.camTargetZ = 0;
     } else {

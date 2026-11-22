@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
-  <title>Voxel Sokoban 3D</title>
+  <title>Crate Expectations</title>
 
   <!-- External Libraries -->
   <script src="https://cdn.tailwindcss.com"></script>
@@ -14,13 +14,314 @@
   <!-- Fonts -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@600;700&family=Outfit:wght@500;600;700;800&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@600;700&family=Outfit:wght@500;600;700;800;900&display=swap" rel="stylesheet">
 
   <!-- App Stylesheet -->
-  <link rel="stylesheet" href="css/styles.css?v=20261122-4" />
+  <link rel="stylesheet" href="css/styles.css?v=20261122-10" />
 
-  <!-- Critical Inline Loader Styles (Zero-Flash First Paint) -->
-  <script>window.__VS_BOOT_START = (window.performance ? performance.now() : Date.now());</script>
+  <!-- Critical Inline Loader & Voxel Wordmark Styles (Zero-Flash First Paint) -->
+  <script>
+    window.__VS_BOOT_START = (window.performance ? performance.now() : Date.now());
+    window.__vsWordmarkSeq = 0;
+    window.__renderVoxelWordmarks = function (opts) {
+      var doc = window.document;
+      if (!doc) return;
+      opts = opts || {};
+      var savedTheme = 'classic-warehouse';
+      var savedBot = 'worker-bot';
+      try {
+        var raw = window.localStorage && window.localStorage.getItem('voxel_sokoban_save_v2');
+        if (raw) {
+          var parsed = JSON.parse(raw);
+          if (parsed && parsed.economy && parsed.economy.equipped) {
+            if (parsed.economy.equipped.theme) savedTheme = parsed.economy.equipped.theme;
+            if (parsed.economy.equipped.bot) savedBot = parsed.economy.equipped.bot;
+          }
+        }
+      } catch (e) {}
+
+      var themeId = opts.themeId || savedTheme;
+      var botId = opts.botId || savedBot;
+
+      var THEME_PALETTES = {
+        'classic-warehouse': {
+          crateGrad: ['#ffffff', '#f1f5f9', '#cbd5e1'],
+          crateExtrudeTop: [203, 213, 225], crateExtrudeNear: [123, 143, 166], crateEdge: '#64748b',
+          expectGrad: ['#9fb3c8', '#7c92aa', '#60768e'],
+          expectExtrudeTop: [203, 213, 225], expectExtrudeNear: [100, 116, 139], expectEdge: '#334155'
+        },
+        'cyber-neon': {
+          crateGrad: ['#e0e7ff', '#a5b4fc', '#818cf8'],
+          crateExtrudeTop: [199, 210, 254], crateExtrudeNear: [99, 102, 241], crateEdge: '#4f46e5',
+          expectGrad: ['#f472b6', '#ec4899', '#be185d'],
+          expectExtrudeTop: [251, 207, 232], expectExtrudeNear: [157, 23, 77], expectEdge: '#831843'
+        },
+        'desert-ruins': {
+          crateGrad: ['#fef3c7', '#fcd34d', '#f59e0b'],
+          crateExtrudeTop: [253, 230, 138], crateExtrudeNear: [217, 119, 6], crateEdge: '#b45309',
+          expectGrad: ['#d97706', '#b45309', '#92400e'],
+          expectExtrudeTop: [251, 191, 36], expectExtrudeNear: [146, 64, 14], expectEdge: '#78350f'
+        },
+        'frost-cavern': {
+          crateGrad: ['#ffffff', '#f0f9ff', '#bae6fd'],
+          crateExtrudeTop: [224, 242, 254], crateExtrudeNear: [125, 211, 252], crateEdge: '#38bdf8',
+          expectGrad: ['#7dd3fc', '#38bdf8', '#0284c7'],
+          expectExtrudeTop: [186, 230, 253], expectExtrudeNear: [3, 105, 161], expectEdge: '#075985'
+        },
+        'sakura-zen': {
+          crateGrad: ['#fff1f2', '#fbcfe8', '#f9a8d4'],
+          crateExtrudeTop: [252, 231, 243], crateExtrudeNear: [244, 114, 182], crateEdge: '#db2777',
+          expectGrad: ['#d6d3d1', '#a8a29e', '#78716c'],
+          expectExtrudeTop: [231, 229, 228], expectExtrudeNear: [120, 113, 108], expectEdge: '#57534e'
+        },
+        'obsidian-gold': {
+          crateGrad: ['#fef9c3', '#fde047', '#f59e0b'],
+          crateExtrudeTop: [254, 240, 138], crateExtrudeNear: [180, 83, 9], crateEdge: '#92400e',
+          expectGrad: ['#71717a', '#52525b', '#3f3f46'],
+          expectExtrudeTop: [161, 161, 170], expectExtrudeNear: [63, 63, 70], expectEdge: '#27272a'
+        }
+      };
+
+      var BOT_PALETTES = {
+        'worker-bot': {
+          accessory: 'antenna',
+          body: { top: '#7dd3fc', front: '#38bdf8', right: '#0284c7' },
+          dark: { top: '#334155', front: '#1e293b', right: '#0f172a' },
+          accent: { top: '#e0f2fe', front: '#7dd3fc', right: '#38bdf8' },
+          visor: '#0f172a', eye: '#34d399', eyeHi: '#a7f3d0'
+        },
+        'builder-bot': {
+          accessory: 'hardhat',
+          body: { top: '#fdba74', front: '#f97316', right: '#c2410c' },
+          dark: { top: '#475569', front: '#334155', right: '#1e293b' },
+          accent: { top: '#fef08a', front: '#facc15', right: '#ca8a04' },
+          visor: '#0f172a', eye: '#fef08a', eyeHi: '#ffffff'
+        },
+        'cyber-bot': {
+          accessory: 'cyberfins',
+          body: { top: '#475569', front: '#1e293b', right: '#0f172a' },
+          dark: { top: '#1e293b', front: '#090d16', right: '#020617' },
+          accent: { top: '#f9a8d4', front: '#ec4899', right: '#be185d' },
+          visor: '#020617', eye: '#f472b6', eyeHi: '#fbcfe8'
+        },
+        'frost-bot': {
+          accessory: 'cryopack',
+          body: { top: '#ffffff', front: '#e2e8f0', right: '#94a3b8' },
+          dark: { top: '#64748b', front: '#475569', right: '#334155' },
+          accent: { top: '#a5f3fc', front: '#67e8f9', right: '#06b6d4' },
+          visor: '#0c4a6e', eye: '#a5f3fc', eyeHi: '#ffffff'
+        },
+        'sakura-bot': {
+          accessory: 'kabuto',
+          body: { top: '#ffffff', front: '#f8fafc', right: '#cbd5e1' },
+          dark: { top: '#475569', front: '#334155', right: '#1e293b' },
+          accent: { top: '#fbcfe8', front: '#f472b6', right: '#db2777' },
+          visor: '#1f1224', eye: '#fbcfe8', eyeHi: '#ffffff'
+        },
+        'royal-bot': {
+          accessory: 'crown',
+          body: { top: '#fef08a', front: '#fbbf24', right: '#b45309' },
+          dark: { top: '#78350f', front: '#451a03', right: '#291002' },
+          accent: { top: '#fef9c3', front: '#fde047', right: '#d97706' },
+          visor: '#18181b', eye: '#fef08a', eyeHi: '#ffffff'
+        }
+      };
+
+      var themePal = THEME_PALETTES[themeId] || THEME_PALETTES['classic-warehouse'];
+      var botPal = BOT_PALETTES[botId] || BOT_PALETTES['worker-bot'];
+
+      var GLYPHS = {
+        C: { w: 64, d: 'M5 0 H64 V28 H24 V72 H64 V100 H5 L0 95 V5 Z' },
+        R: { w: 66, d: 'M0 0 H60 L66 6 V46 L56 54 L66 64 V100 H42 V66 H24 V100 H0 Z M24 22 H42 V40 H24 Z' },
+        A: { w: 66, d: 'M6 0 H60 L66 6 V100 H42 V72 H24 V100 H0 V6 Z M24 24 H42 V48 H24 Z' },
+        T: { w: 66, d: 'M0 0 H66 V26 H45 V100 H21 V26 H0 Z' },
+        E: { w: 62, d: 'M0 0 H62 V24 H24 V38 H54 V62 H24 V76 H62 V100 H0 Z' },
+        X: { w: 68, d: 'M0 0 H24 L34 28 L44 0 H68 L48 50 L68 100 H44 L34 72 L24 100 H0 L20 50 Z' },
+        P: { w: 64, d: 'M0 0 H58 L64 6 V54 L58 60 H24 V100 H0 Z M24 22 H42 V38 H24 Z' },
+        I: { w: 26, d: 'M0 0 H26 V100 H0 Z' },
+        O: { w: 66, d: 'M6 0 H60 L66 6 V94 L60 100 H6 L0 94 V6 Z M24 24 H42 V76 H24 Z' },
+        N: { w: 68, d: 'M0 0 H22 L46 56 V0 H68 V100 H46 L22 44 V100 H0 Z' },
+        S: { w: 64, d: 'M6 0 H64 V24 H24 V38 H58 L64 44 V94 L58 100 H0 V76 H40 V62 H6 L0 56 V6 Z' }
+      };
+      function layoutWord(word, gap) {
+        var items = [];
+        var x = 0;
+        for (var i = 0; i < word.length; i++) {
+          var g = GLYPHS[word[i]];
+          if (!g) continue;
+          items.push({ x: x, d: g.d });
+          x += g.w + (i < word.length - 1 ? gap : 0);
+        }
+        return items;
+      }
+      function wordPaths(items, fill, stroke, strokeW, strokeOp) {
+        var out = '';
+        var sAttr = stroke
+          ? ' stroke="' + stroke + '" stroke-width="' + strokeW + '" stroke-linejoin="round"' +
+            (strokeOp !== undefined && strokeOp < 1 ? ' stroke-opacity="' + strokeOp + '"' : '')
+          : '';
+        for (var i = 0; i < items.length; i++) {
+          out += '<path transform="translate(' + items[i].x + ',0)" d="' + items[i].d + '" fill="' + fill + '" fill-rule="evenodd"' + sAttr + '/>';
+        }
+        return out;
+      }
+      function lerpColor(c1, c2, t) {
+        var r = Math.round(c1[0] + (c2[0] - c1[0]) * t);
+        var g = Math.round(c1[1] + (c2[1] - c1[1]) * t);
+        var b = Math.round(c1[2] + (c2[2] - c1[2]) * t);
+        return 'rgb(' + r + ',' + g + ',' + b + ')';
+      }
+      function renderExtrudedRow(word, cfg) {
+        var items = layoutWord(word, cfg.gap);
+        var out = '';
+        var outlineParts = '';
+        for (var k = cfg.steps; k >= 0; k--) {
+          if (k !== 0 && k !== cfg.steps && k % 2 !== 0) continue;
+          var t = k / cfg.steps;
+          var tx = (cfg.ox + cfg.dx * t).toFixed(2);
+          var ty = (cfg.oy + cfg.dy * t).toFixed(2);
+          outlineParts += '<g transform="translate(' + tx + ',' + ty + ') scale(' + cfg.sx + ',' + cfg.sy + ')">' +
+            wordPaths(items, '#090e1a', '#090e1a', cfg.outlineW) + '</g>';
+        }
+        out += cfg.outlineOpacity < 1
+          ? '<g opacity="' + cfg.outlineOpacity + '">' + outlineParts + '</g>'
+          : outlineParts;
+        for (var j = cfg.steps; j >= 1; j--) {
+          var tj = j / cfg.steps;
+          var rx = (cfg.ox + cfg.dx * tj).toFixed(2);
+          var ry = (cfg.oy + cfg.dy * tj).toFixed(2);
+          var col = lerpColor(cfg.extrudeNear, cfg.extrudeTop, tj);
+          out += '<g transform="translate(' + rx + ',' + ry + ') scale(' + cfg.sx + ',' + cfg.sy + ')">' +
+            wordPaths(items, col, null, 0) + '</g>';
+        }
+        out += '<g transform="translate(' + cfg.ox + ',' + cfg.oy + ') scale(' + cfg.sx + ',' + cfg.sy + ')">' +
+          wordPaths(items, 'url(#' + cfg.frontGradId + ')', cfg.edgeStroke, cfg.edgeW, cfg.edgeOpacity) + '</g>';
+        return out;
+      }
+      function drawVoxelBox(x, y, w, h, dx, dy, c, sw) {
+        var x2 = x + w;
+        var y2 = y + h;
+        var tx = x + dx;
+        var tx2 = x2 + dx;
+        var ty = y - dy;
+        var ty2 = y2 - dy;
+        var s = sw ? ' stroke="#090e1a" stroke-width="' + sw + '" stroke-linejoin="round"' : '';
+        return (
+          '<polygon points="' + x + ',' + y + ' ' + tx + ',' + ty + ' ' + tx2 + ',' + ty + ' ' + x2 + ',' + y + '" fill="' + c.top + '"' + s + '/>' +
+          '<polygon points="' + x2 + ',' + y + ' ' + tx2 + ',' + ty + ' ' + tx2 + ',' + ty2 + ' ' + x2 + ',' + y2 + '" fill="' + c.right + '"' + s + '/>' +
+          '<rect x="' + x + '" y="' + y + '" width="' + w + '" height="' + h + '" fill="' + c.front + '"' + s + '/>'
+        );
+      }
+      function renderBotAccessory(bp) {
+        var acc = bp.accessory;
+        if (acc === 'hardhat') {
+          return (
+            drawVoxelBox(255, 29, 32, 7, 10.5, 8.5, bp.accent, 1.5) +
+            drawVoxelBox(258, 34, 26, 3.2, 4, 3.2, bp.accent, 1.3) +
+            drawVoxelBox(269, 25, 8, 4, 8.5, 6.8, bp.accent, 1.3)
+          );
+        }
+        if (acc === 'cyberfins') {
+          return (
+            drawVoxelBox(251, 30, 5, 16, 4.5, 3.8, bp.dark, 1.3) +
+            drawVoxelBox(251, 22, 5, 8, 3.5, 2.8, bp.accent, 1.3) +
+            drawVoxelBox(287, 30, 5, 16, 4.5, 3.8, bp.dark, 1.3) +
+            drawVoxelBox(287, 22, 5, 8, 3.5, 2.8, bp.accent, 1.3) +
+            drawVoxelBox(263, 28, 18, 3.5, 4, 3.2, bp.accent, 1.2)
+          );
+        }
+        if (acc === 'cryopack') {
+          return drawVoxelBox(262, 27.5, 20, 4.5, 6.5, 5.2, bp.accent, 1.4);
+        }
+        if (acc === 'kabuto') {
+          return (
+            drawVoxelBox(255, 30, 32, 6, 10.5, 8.5, bp.dark, 1.5) +
+            drawVoxelBox(268, 25, 6, 6, 2.6, 2.2, bp.accent, 1.3) +
+            drawVoxelBox(261, 19, 5, 10, 2.4, 2.0, bp.accent, 1.3) +
+            drawVoxelBox(276, 19, 5, 10, 2.4, 2.0, bp.accent, 1.3)
+          );
+        }
+        if (acc === 'crown') {
+          return (
+            drawVoxelBox(258, 29, 26, 5.5, 9, 7.2, bp.accent, 1.4) +
+            drawVoxelBox(259, 22, 5.5, 7, 3, 2.4, bp.accent, 1.3) +
+            drawVoxelBox(268.5, 21, 5.5, 8, 3, 2.4, bp.accent, 1.3) +
+            drawVoxelBox(278, 22, 5.5, 7, 3, 2.4, bp.accent, 1.3)
+          );
+        }
+        // Default: 'antenna'
+        return (
+          drawVoxelBox(274, 24, 3.5, 7, 2.4, 2.0, bp.dark, 1.3) +
+          drawVoxelBox(272, 17, 7.5, 6.5, 3.8, 3.2, bp.accent, 1.5)
+        );
+      }
+      function renderWavingBot(bp) {
+        var out = '<g class="voxel-bot-mascot" data-bot-skin="' + botId + '">';
+        out += '<ellipse cx="277" cy="91.5" rx="20" ry="3.4" fill="rgba(9,14,26,0.45)"/>';
+        // Feet (deeper 3D)
+        out += drawVoxelBox(259, 82, 10, 8, 6.0, 4.8, bp.dark, 1.7);
+        out += drawVoxelBox(275, 82, 10, 8, 6.0, 4.8, bp.dark, 1.7);
+        // Left arm
+        out += drawVoxelBox(250, 60, 7, 14, 5.0, 4.0, bp.dark, 1.7);
+        // Torso (deeper 3D)
+        out += drawVoxelBox(257, 57, 28, 25, 9.5, 7.8, bp.body, 1.9);
+        // Waving right arm (pivots at shoulder 290,61)
+        out += '<g class="voxel-bot-arm">' +
+          drawVoxelBox(287, 43, 7.5, 18, 5.5, 4.5, bp.dark, 1.7) +
+          '</g>';
+        // Head (deeper 3D matching game proportions)
+        out += drawVoxelBox(256, 35, 30, 22, 10.0, 8.2, bp.body, 1.9);
+        // Visor & glowing eyes
+        out += '<rect x="260" y="42" width="22" height="9.5" rx="1.4" fill="' + bp.visor + '"/>';
+        out += '<rect x="264" y="44.5" width="5" height="4.8" rx="0.5" fill="' + bp.eye + '"/>';
+        out += '<rect x="273" y="44.5" width="5" height="4.8" rx="0.5" fill="' + bp.eye + '"/>';
+        out += '<rect x="264.8" y="45.1" width="1.8" height="1.6" fill="' + bp.eyeHi + '"/>';
+        out += '<rect x="273.8" y="45.1" width="1.8" height="1.6" fill="' + bp.eyeHi + '"/>';
+        // Skin-matched headgear / accessory
+        out += renderBotAccessory(bp);
+        out += '</g>';
+        return out;
+      }
+      var hosts = doc.querySelectorAll('[data-voxel-wordmark]');
+      for (var i = 0; i < hosts.length; i++) {
+        var existing = hosts[i].querySelector('.voxel-wordmark-svg');
+        if (existing && !opts.force) continue;
+        if (existing) existing.remove();
+        var uid = ++window.__vsWordmarkSeq;
+        var crateGradId = 'vs-crate-front-' + uid;
+        var expectGradId = 'vs-expect-front-' + uid;
+        var svgMarkup =
+          '<svg viewBox="0 0 320 140" class="voxel-wordmark-svg" data-theme-skin="' + themeId + '" data-bot-skin="' + botId + '" aria-hidden="true">' +
+          '<defs>' +
+            '<linearGradient id="' + crateGradId + '" x1="0" y1="0" x2="0" y2="1">' +
+              '<stop offset="0%" stop-color="' + themePal.crateGrad[0] + '"/>' +
+              '<stop offset="58%" stop-color="' + themePal.crateGrad[1] + '"/>' +
+              '<stop offset="100%" stop-color="' + themePal.crateGrad[2] + '"/>' +
+            '</linearGradient>' +
+            '<linearGradient id="' + expectGradId + '" x1="0" y1="0" x2="0" y2="1">' +
+              '<stop offset="0%" stop-color="' + themePal.expectGrad[0] + '"/>' +
+              '<stop offset="55%" stop-color="' + themePal.expectGrad[1] + '"/>' +
+              '<stop offset="100%" stop-color="' + themePal.expectGrad[2] + '"/>' +
+            '</linearGradient>' +
+          '</defs>' +
+          renderExtrudedRow('CRATE', {
+            gap: 12, ox: 10, oy: 21, sx: 0.605, sy: 0.72,
+            steps: 10, dx: 4.2, dy: -12.5, outlineW: 10, outlineOpacity: 1,
+            extrudeTop: themePal.crateExtrudeTop, extrudeNear: themePal.crateExtrudeNear,
+            frontGradId: crateGradId, edgeStroke: themePal.crateEdge, edgeW: 1.5, edgeOpacity: 1
+          }) +
+          renderExtrudedRow('EXPECTATIONS', {
+            gap: 10, ox: 9, oy: 94, sx: 0.352, sy: 0.36,
+            steps: 6, dx: 2.5, dy: -7.5, outlineW: 15, outlineOpacity: 0.5,
+            extrudeTop: themePal.expectExtrudeTop, extrudeNear: themePal.expectExtrudeNear,
+            frontGradId: expectGradId, edgeStroke: themePal.expectEdge, edgeW: 2.2, edgeOpacity: 0.5
+          }) +
+          renderWavingBot(botPal) +
+          '</svg>';
+        hosts[i].insertAdjacentHTML('beforeend', svgMarkup);
+      }
+    };
+  </script>
   <style>
     #screen-loader {
       position: fixed;
@@ -41,34 +342,56 @@
       visibility: hidden;
       pointer-events: none;
     }
-    .loader-emblem {
-      width: 72px;
-      height: 72px;
-      border-radius: 20px;
-      background: linear-gradient(135deg, #38bdf8 0%, #6366f1 55%, #34d399 100%);
+    .sr-only {
+      position: absolute;
+      width: 1px;
+      height: 1px;
+      padding: 0;
+      margin: -1px;
+      overflow: hidden;
+      clip: rect(0, 0, 0, 0);
+      white-space: nowrap;
+      border: 0;
+    }
+    .voxel-wordmark {
       display: flex;
+      flex-direction: column;
       align-items: center;
       justify-content: center;
-      box-shadow: 0 14px 36px rgba(56, 189, 248, 0.32), inset 0 1px 0 rgba(255, 255, 255, 0.45);
-      animation: voxelLoaderFloat 1.7s ease-in-out infinite;
-      margin-bottom: 18px;
+      width: 100%;
+      margin: 0;
+      line-height: 1;
+      user-select: none;
     }
-    @keyframes voxelLoaderFloat {
-      0%, 100% { transform: translateY(0) scale(1); }
-      50% { transform: translateY(-7px) scale(1.03); }
+    .voxel-wordmark-svg {
+      display: block;
+      width: 100%;
+      max-width: 312px;
+      height: auto;
+      filter: drop-shadow(0 8px 14px rgba(2, 6, 23, 0.58));
     }
-    .loader-title {
-      font-size: 28px;
-      font-weight: 800;
-      letter-spacing: -0.02em;
-      margin: 0 0 4px 0;
+    .voxel-wordmark-lg {
+      margin-bottom: 24px;
     }
-    .loader-sub {
-      font-size: 12px;
-      color: #94a3b8;
-      letter-spacing: 0.08em;
-      text-transform: uppercase;
-      margin: 0 0 22px 0;
+    .voxel-wordmark-lg .voxel-wordmark-svg {
+      max-width: 360px;
+    }
+    .voxel-bot-arm {
+      transform-origin: 290px 61px;
+      transform: rotate(22deg);
+      animation: voxelBotWave 1.6s ease-in-out infinite;
+    }
+    @keyframes voxelBotWave {
+      0%, 100% { transform: rotate(16deg); }
+      30% { transform: rotate(34deg); }
+      55% { transform: rotate(10deg); }
+      80% { transform: rotate(30deg); }
+    }
+    @media (prefers-reduced-motion: reduce) {
+      .voxel-bot-arm {
+        animation: none;
+        transform: rotate(24deg);
+      }
     }
     .loader-track {
       width: 220px;
@@ -110,13 +433,10 @@
 <body>
   <!-- Zero-Flash Loading Screen -->
   <div id="screen-loader" role="status" aria-live="polite">
-    <div class="loader-emblem">
-      <svg width="38" height="38" viewBox="0 0 24 24" fill="#020617">
-        <path d="M12 2L3 7v10l9 5 9-5V7l-9-5zm0 2.3L18.6 8 12 11.7 5.4 8 12 4.3zM5 9.8l6 3.4v6.5l-6-3.3V9.8zm14 6.6l-6 3.3v-6.5l6-3.4v6.6z"/>
-      </svg>
-    </div>
-    <h1 class="loader-title">Voxel Sokoban</h1>
-    <p class="loader-sub">3D Voxel Puzzle Diorama</p>
+    <h1 class="voxel-wordmark voxel-wordmark-lg" data-voxel-wordmark>
+      <span class="sr-only">Crate Expectations</span>
+    </h1>
+    <script>window.__renderVoxelWordmarks();</script>
     <div class="loader-track">
       <div id="loader-progress-fill"></div>
     </div>
@@ -145,7 +465,7 @@
               </svg>
             </div>
             <div class="text-left leading-tight min-w-0 flex-1">
-              <div class="text-[10px] uppercase tracking-wider text-sky-400 font-bold">Voxel Sokoban</div>
+              <div class="text-[10px] uppercase tracking-wider text-sky-400 font-bold truncate">Crate Expectations</div>
               <div id="hud-level-name" class="text-xs sm:text-base font-bold text-white flex items-center gap-1 min-w-0">
                 <span id="hud-level-text" class="truncate">#1 · S1. First Steps</span>
                 <svg class="w-3.5 h-3.5 shrink-0 text-slate-400" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7"/></svg>
@@ -305,44 +625,40 @@
   <!-- Main Menu Overlay -->
   <div id="modal-menu" class="modal-backdrop modal-hidden fixed inset-0 z-30 bg-slate-950/60 backdrop-blur-sm flex items-center justify-center p-4">
     <div class="modal-card glass-panel rounded-3xl w-full max-w-sm max-h-[88vh] overflow-y-auto p-6 text-center">
-      <div class="w-14 h-14 mx-auto mb-3 rounded-2xl bg-gradient-to-br from-sky-400 via-indigo-500 to-emerald-400 flex items-center justify-center shadow-lg shadow-sky-500/30">
-        <svg class="w-8 h-8 text-slate-950" viewBox="0 0 24 24" fill="currentColor">
-          <path d="M12 2L3 7v10l9 5 9-5V7l-9-5zm0 2.3L18.6 8 12 11.7 5.4 8 12 4.3zM5 9.8l6 3.4v6.5l-6-3.3V9.8zm14 6.6l-6 3.3v-6.5l6-3.4v6.6z"/>
-        </svg>
-      </div>
-      <h1 class="text-3xl font-extrabold tracking-tight text-white">Voxel Sokoban</h1>
-      <p class="text-xs text-slate-300 mt-1 mb-4">3D Voxel Puzzle Diorama</p>
+      <h1 class="voxel-wordmark mb-5" data-voxel-wordmark>
+        <span class="sr-only">Crate Expectations</span>
+      </h1>
 
       <div class="grid grid-cols-3 gap-2 mb-5">
-        <div class="bg-slate-900/70 rounded-2xl p-2 border border-slate-700/60">
-          <div class="text-[9px] uppercase tracking-wider text-slate-400 font-semibold">Stars</div>
-          <div id="menu-stars" class="mono text-sm sm:text-base font-bold text-amber-400">★ 0/1500</div>
+        <div class="bg-slate-900/65 rounded-2xl px-1.5 py-2.5 border border-slate-700/60 flex flex-col items-center justify-center">
+          <div class="text-[10px] uppercase tracking-wider text-slate-400 font-medium leading-none">Stars</div>
+          <div id="menu-stars" class="text-sm sm:text-[15px] font-bold text-white whitespace-nowrap tabular-nums leading-tight mt-1">0/1500</div>
         </div>
-        <div class="bg-slate-900/70 rounded-2xl p-2 border border-slate-700/60">
-          <div class="text-[9px] uppercase tracking-wider text-slate-400 font-semibold">Score</div>
-          <div id="menu-score" class="mono text-sm sm:text-base font-bold text-sky-400">0</div>
+        <div class="bg-slate-900/65 rounded-2xl px-1.5 py-2.5 border border-slate-700/60 flex flex-col items-center justify-center">
+          <div class="text-[10px] uppercase tracking-wider text-slate-400 font-medium leading-none">Score</div>
+          <div id="menu-score" class="text-sm sm:text-[15px] font-bold text-white whitespace-nowrap tabular-nums leading-tight mt-1">0</div>
         </div>
-        <div class="bg-slate-900/70 rounded-2xl p-2 border border-slate-700/60">
-          <div class="text-[9px] uppercase tracking-wider text-slate-400 font-semibold">Coins</div>
-          <div id="menu-coins" class="mono text-sm sm:text-base font-bold text-amber-300">0</div>
+        <div class="bg-slate-900/65 rounded-2xl px-1.5 py-2.5 border border-slate-700/60 flex flex-col items-center justify-center">
+          <div class="text-[10px] uppercase tracking-wider text-slate-400 font-medium leading-none">Coins</div>
+          <div id="menu-coins" class="text-sm sm:text-[15px] font-bold text-white whitespace-nowrap tabular-nums leading-tight mt-1">0</div>
         </div>
       </div>
 
       <div class="flex flex-col gap-2.5">
-        <button id="btn-menu-play" class="game-btn game-btn-primary rounded-2xl py-3.5 font-extrabold text-base flex items-center justify-center gap-2">
-          <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>
+        <button id="btn-menu-play" class="game-btn game-btn-primary rounded-2xl py-3.5 font-bold text-[15px] flex items-center justify-center gap-2">
+          <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>
           <span id="btn-menu-play-label">Play</span>
         </button>
-        <button id="btn-menu-shop" class="game-btn rounded-2xl py-3 font-bold text-sm text-amber-200 flex items-center justify-center gap-2">
-          <span class="w-4 h-4 rounded-full bg-amber-400 text-amber-950 font-extrabold text-[10px] flex items-center justify-center">V</span>
+        <button id="btn-menu-shop" class="game-btn rounded-2xl py-3 font-semibold text-sm text-slate-100 flex items-center justify-center gap-2">
+          <span class="w-4 h-4 rounded-full bg-amber-400 text-amber-950 font-bold text-[10px] flex items-center justify-center">V</span>
           <span>Shop &amp; Themes</span>
         </button>
         <div class="grid grid-cols-2 gap-2.5">
-          <button id="btn-menu-levels" class="game-btn rounded-2xl py-2.5 font-bold text-xs sm:text-sm text-slate-100 flex items-center justify-center gap-1.5">
+          <button id="btn-menu-levels" class="game-btn rounded-2xl py-2.5 font-semibold text-sm text-slate-100 flex items-center justify-center gap-1.5">
             <svg class="w-4 h-4 text-amber-400" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zm10 0a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zm10 0a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z"/></svg>
             <span>Levels</span>
           </button>
-          <button id="btn-menu-settings" class="game-btn rounded-2xl py-2.5 font-bold text-xs sm:text-sm text-slate-100 flex items-center justify-center gap-1.5">
+          <button id="btn-menu-settings" class="game-btn rounded-2xl py-2.5 font-semibold text-sm text-slate-100 flex items-center justify-center gap-1.5">
             <svg class="w-4 h-4 text-sky-400" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"/><path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
             <span>Settings</span>
           </button>
@@ -350,6 +666,7 @@
       </div>
     </div>
   </div>
+  <script>window.__renderVoxelWordmarks();</script>
 
   <!-- Live 3D Intro Overlay -->
   <div id="intro-overlay" class="modal-backdrop modal-hidden fixed inset-0 z-[35] pointer-events-none flex flex-col justify-between p-4 sm:p-6">
@@ -367,7 +684,7 @@
           <span class="intro-dot"></span>
           <span class="intro-dot"></span>
         </div>
-        <h2 id="intro-title" class="text-lg sm:text-xl font-extrabold text-white mb-1">Voxel Sokoban 3D</h2>
+        <h2 id="intro-title" class="text-lg sm:text-xl font-extrabold text-white mb-1">Crate Expectations</h2>
         <p id="intro-subtitle" class="text-xs sm:text-sm text-slate-300 leading-relaxed">500 verified 3D voxel puzzle dioramas — from warmups to grandmaster vaults.</p>
         <button id="btn-intro-cta" type="button" class="hidden mt-3.5 game-btn game-btn-primary rounded-2xl w-full py-2.5 font-extrabold text-sm">
           Start Playing
@@ -559,22 +876,22 @@
   </div>
 
   <!-- Application Modules (Loaded in dependency order) -->
-  <script src="js/config.js?v=20261122-4"></script>
-  <script src="js/levels-data.js?v=20261122-4"></script>
-  <script src="js/levels.js?v=20261122-4"></script>
-  <script src="js/storage.js?v=20261122-4"></script>
-  <script src="js/audio.js?v=20261122-4"></script>
-  <script src="js/cosmetics.js?v=20261122-4"></script>
-  <script src="js/voxels.js?v=20261122-4"></script>
-  <script src="js/renderer.js?v=20261122-4"></script>
-  <script src="js/platform.js?v=20261122-4"></script>
-  <script src="js/adapters/mock-adapter.js?v=20261122-4"></script>
-  <script src="js/adapters/crazygames-adapter.js?v=20261122-4"></script>
-  <script src="js/monetization.js?v=20261122-4"></script>
-  <script src="js/game.js?v=20261122-4"></script>
-  <script src="js/intro.js?v=20261122-4"></script>
-  <script src="js/ui.js?v=20261122-4"></script>
-  <script src="js/input.js?v=20261122-4"></script>
-  <script src="js/main.js?v=20261122-4"></script>
+  <script src="js/config.js?v=20261122-9"></script>
+  <script src="js/levels-data.js?v=20261122-9"></script>
+  <script src="js/levels.js?v=20261122-9"></script>
+  <script src="js/storage.js?v=20261122-9"></script>
+  <script src="js/audio.js?v=20261122-9"></script>
+  <script src="js/cosmetics.js?v=20261122-9"></script>
+  <script src="js/voxels.js?v=20261122-9"></script>
+  <script src="js/renderer.js?v=20261122-9"></script>
+  <script src="js/platform.js?v=20261122-9"></script>
+  <script src="js/adapters/mock-adapter.js?v=20261122-9"></script>
+  <script src="js/adapters/crazygames-adapter.js?v=20261122-9"></script>
+  <script src="js/monetization.js?v=20261122-9"></script>
+  <script src="js/game.js?v=20261122-9"></script>
+  <script src="js/intro.js?v=20261122-9"></script>
+  <script src="js/ui.js?v=20261122-9"></script>
+  <script src="js/input.js?v=20261122-9"></script>
+  <script src="js/main.js?v=20261122-9"></script>
 </body>
 </html>
