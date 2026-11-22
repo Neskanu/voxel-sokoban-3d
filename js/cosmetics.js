@@ -250,6 +250,23 @@
       }
     },
     {
+      id: 'sakura-bot',
+      name: 'Sakura Ronin',
+      subtitle: 'Blossom armor & kabuto crest',
+      price: 400,
+      proExclusive: false,
+      accessory: 'kabuto',
+      swatches: ['#f8fafc', '#f472b6', '#334155'],
+      materials: {
+        playerBody: { color: 0xf8fafc, roughness: 0.42, metalness: 0.14 },
+        playerDark: { color: 0x334155, roughness: 0.58, metalness: 0.25 },
+        playerPack: { color: 0xdb2777, roughness: 0.45, metalness: 0.18 },
+        playerVisor: { color: 0x1f1224, roughness: 0.2, metalness: 0.6 },
+        playerEye: { color: 0xfbcfe8, emissive: 0xf472b6, emissiveIntensity: 0.95, roughness: 0.2, metalness: 0.1 },
+        playerAccent: { color: 0xf472b6, emissive: 0xdb2777, emissiveIntensity: 0.45, roughness: 0.28, metalness: 0.35 }
+      }
+    },
+    {
       id: 'royal-bot',
       name: 'Gilded King',
       subtitle: 'Brushed gold & voxel crown',
@@ -331,6 +348,22 @@
         crateTrim: { color: 0xe2e8f0, roughness: 0.35, metalness: 0.45 },
         crateDone: { color: 0x2dd4bf, emissive: 0x0d9488, emissiveIntensity: 0.42, roughness: 0.22, metalness: 0.3 },
         crateDoneTrim: { color: 0xf0fdfa, roughness: 0.3, metalness: 0.4 }
+      }
+    },
+    {
+      id: 'sakura-crate',
+      name: 'Lantern Box',
+      subtitle: 'Cedar frame & blossom glow',
+      price: 380,
+      proExclusive: false,
+      swatches: ['#44322a', '#f472b6', '#fef08a'],
+      pushParticleColor: 0xf472b6,
+      lockParticleColor: 0xfef08a,
+      materials: {
+        crateWood: { color: 0xf472b6, emissive: 0xdb2777, emissiveIntensity: 0.32, roughness: 0.45, metalness: 0.08 },
+        crateTrim: { color: 0x44322a, roughness: 0.78, metalness: 0.06 },
+        crateDone: { color: 0xfef08a, emissive: 0xf59e0b, emissiveIntensity: 0.5, roughness: 0.35, metalness: 0.12 },
+        crateDoneTrim: { color: 0x78350f, roughness: 0.65, metalness: 0.1 }
       }
     },
     {

@@ -181,6 +181,15 @@
       return;
     }
 
+    if (accessory === 'kabuto') {
+      group.add(createBox(0.48, 0.12, 0.46, MAT.playerDark, 0, 0.91, 0.01));
+      group.add(createBox(0.54, 0.05, 0.44, MAT.playerDark, 0, 0.85, -0.02));
+      group.add(createBox(0.10, 0.10, 0.06, MAT.playerAccent, 0, 0.95, 0.24, false, false));
+      group.add(createBox(0.08, 0.16, 0.06, MAT.playerAccent, -0.11, 1.03, 0.23, false, false));
+      group.add(createBox(0.08, 0.16, 0.06, MAT.playerAccent, 0.11, 1.03, 0.23, false, false));
+      return;
+    }
+
     if (accessory === 'crown') {
       group.add(createBox(0.44, 0.09, 0.42, MAT.playerAccent, 0, 0.92, 0.01));
       [
