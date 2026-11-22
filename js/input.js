@@ -245,11 +245,6 @@
       VS.UI.openShop();
     });
 
-    byId('btn-menu-pro').addEventListener('click', () => {
-      VS.Sound.unlock();
-      VS.UI.openProModal();
-    });
-
     byId('btn-menu-levels').addEventListener('click', () => {
       VS.Sound.unlock();
       VS.UI.openLevelSelectForCurrentPack();
@@ -303,23 +298,6 @@
       if (VS.Intro) VS.Intro.skip();
     });
 
-    byId('btn-restore-purchases').addEventListener('click', async () => {
-      VS.Sound.unlock();
-      const statusEl = byId('restore-status');
-      if (!VS.Monetization) return;
-      const res = await VS.Monetization.restorePurchases();
-      if (statusEl) {
-        statusEl.textContent = res.ok ? 'Purchases restored!' : 'No previous purchases found.';
-      }
-    });
-
-    byId('btn-dev-toggle-pro').addEventListener('click', () => {
-      if (!VS.Monetization) return;
-      const nowPro = VS.Monetization.devTogglePro();
-      const note = byId('dev-monetization-note');
-      if (note) note.textContent = `Mock Pro is now ${nowPro ? 'ENABLED' : 'DISABLED'}.`;
-    });
-
     byId('btn-dev-add-coins').addEventListener('click', () => {
       if (!VS.Monetization) return;
       const total = VS.Monetization.devAddCoins(500);
@@ -338,7 +316,7 @@
       if (!VS.Monetization) return;
       VS.Monetization.devResetMockEconomy();
       const note = byId('dev-monetization-note');
-      if (note) note.textContent = 'Mock purchases, packs & coins reset.';
+      if (note) note.textContent = 'Mock packs, cosmetics & coins reset.';
     });
 
     byId('toggle-dev-ad-fail').addEventListener('click', () => {
@@ -370,10 +348,6 @@
     byId('shop-tab-themes').addEventListener('click', () => VS.UI.setShopTab('themes'));
     byId('shop-tab-bots').addEventListener('click', () => VS.UI.setShopTab('bots'));
     byId('shop-tab-crates').addEventListener('click', () => VS.UI.setShopTab('crates'));
-    byId('btn-shop-go-pro').addEventListener('click', () => {
-      VS.Sound.unlock();
-      VS.UI.openProModal();
-    });
     byId('btn-shop-free-coins').addEventListener('click', async () => {
       VS.Sound.unlock();
       if (!VS.Monetization) return;
@@ -389,35 +363,8 @@
       }
     });
 
-    // --- Pro Modal ---
-    byId('btn-close-pro').addEventListener('click', () => VS.UI.hideModal('modal-pro'));
-    byId('btn-pro-buy').addEventListener('click', async () => {
-      VS.Sound.unlock();
-      if (!VS.Monetization) return;
-      const statusEl = byId('pro-status');
-      const res = await VS.Monetization.purchasePro();
-      if (statusEl) {
-        if (res.ok) {
-          statusEl.textContent = res.bonusGranted
-            ? `Voxel Sokoban Pro unlocked! +${res.bonusGranted} bonus coins added.`
-            : 'Voxel Sokoban Pro is active!';
-        } else {
-          statusEl.textContent = 'Purchase did not complete.';
-        }
-      }
-    });
-    byId('btn-pro-restore').addEventListener('click', async () => {
-      VS.Sound.unlock();
-      if (!VS.Monetization) return;
-      const statusEl = byId('pro-status');
-      const res = await VS.Monetization.restorePurchases();
-      if (statusEl) {
-        statusEl.textContent = res.ok ? 'Purchases restored!' : 'No previous purchases found.';
-      }
-    });
-
     // --- Backdrop Click-to-Close on Secondary Modals ---
-    ['modal-levels', 'modal-settings', 'modal-shop', 'modal-pro'].forEach((modalId) => {
+    ['modal-levels', 'modal-settings', 'modal-shop'].forEach((modalId) => {
       const backdrop = byId(modalId);
       if (!backdrop) return;
       backdrop.addEventListener('click', (e) => {

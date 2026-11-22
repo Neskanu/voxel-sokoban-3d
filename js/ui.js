@@ -30,7 +30,7 @@
   let lastWinNextLockInfo = null;
   let currentLockAction = null;
 
-  const MODAL_IDS = ['modal-settings', 'modal-levels', 'modal-win', 'modal-shop', 'modal-pro', 'modal-ad'];
+  const MODAL_IDS = ['modal-settings', 'modal-levels', 'modal-win', 'modal-shop', 'modal-ad'];
 
   function byId(id) {
     return global.document.getElementById(id);
@@ -74,10 +74,6 @@
       hideModal('modal-settings');
       return true;
     }
-    if (isModalOpen('modal-pro')) {
-      hideModal('modal-pro');
-      return true;
-    }
     if (isModalOpen('modal-shop')) {
       hideModal('modal-shop');
       return true;
@@ -116,9 +112,7 @@
 
   function openSettings() {
     applySettings();
-    const restoreNote = byId('restore-status');
     const devNote = byId('dev-monetization-note');
-    if (restoreNote) restoreNote.textContent = '';
     if (devNote) devNote.textContent = '';
     refreshEconomyUI();
     showModal('modal-settings');
@@ -195,57 +189,16 @@
 
   function refreshEconomyUI() {
     const coins = VS.Storage ? VS.Storage.getCoins() : 0;
-    const isPro = VS.Storage ? VS.Storage.isPro() : false;
-    const caps = VS.Monetization
-      ? VS.Monetization.getCapabilities()
-      : { rewardedAds: false, interstitialAds: false, iap: false, restorePurchases: false };
-    const effectivePro = Boolean(caps.iap && isPro);
 
     if (byId('hud-coins')) byId('hud-coins').textContent = coins.toLocaleString();
-    if (byId('hud-pro-badge')) byId('hud-pro-badge').classList.toggle('hidden', !effectivePro);
     if (byId('menu-coins')) byId('menu-coins').textContent = coins.toLocaleString();
     if (byId('shop-coins')) byId('shop-coins').textContent = coins.toLocaleString();
-
-    const menuProBtn = byId('btn-menu-pro');
-    const menuProLabel = byId('btn-menu-pro-label');
-    if (menuProBtn && menuProLabel) {
-      if (!caps.iap) {
-        menuProBtn.classList.add('hidden');
-      } else {
-        menuProBtn.classList.remove('hidden');
-        menuProLabel.textContent = effectivePro ? 'Pro Active ★ (2× Coins & No Ads)' : 'Go Pro • Remove Ads';
-      }
-    }
-
-    const shopGoProBtn = byId('btn-shop-go-pro');
-    if (shopGoProBtn) {
-      shopGoProBtn.classList.toggle('hidden', effectivePro || !caps.iap);
-    }
-
-    const proBuyBtn = byId('btn-pro-buy');
-    if (proBuyBtn) {
-      const price = VS.Monetization ? VS.Monetization.getProductPrice(VS.CONFIG.PRO_PRODUCT_ID, '$4.99') : '$4.99';
-      proBuyBtn.disabled = effectivePro;
-      proBuyBtn.textContent = effectivePro ? 'Voxel Sokoban Pro Active ✓' : `Unlock Pro — ${price}`;
-    }
-
-    const proRestoreBtn = byId('btn-pro-restore');
-    if (proRestoreBtn) {
-      proRestoreBtn.classList.toggle('hidden', !caps.restorePurchases);
-    }
-
-    const settingsRestoreRow = byId('settings-restore-row');
-    if (settingsRestoreRow) {
-      settingsRestoreRow.classList.toggle('hidden', !caps.restorePurchases);
-    }
 
     const devPanel = byId('settings-dev-monetization');
     if (devPanel && VS.Monetization) {
       const showDevUi = VS.Monetization.isDevUiEnabled();
       devPanel.classList.toggle('hidden', !showDevUi);
       if (showDevUi) {
-        const devProBtn = byId('btn-dev-toggle-pro');
-        if (devProBtn) devProBtn.textContent = isPro ? 'Pro: ON (Toggle)' : 'Pro: OFF (Toggle)';
         const failEnabled = VS.MockAdapter ? VS.MockAdapter.getSimulateAdFail() : false;
         syncToggle('toggle-dev-ad-fail', failEnabled);
       }
@@ -392,7 +345,7 @@
     const stars = rec ? rec.stars : 0;
     const tag = VS.Levels.getLevelTag(lv);
     const topLabel = Number.isFinite(lv.rank) ? `#${lv.rank} · ${tag}` : tag;
-    const caps = VS.Monetization ? VS.Monetization.getCapabilities() : { rewardedAds: false, iap: false };
+    const caps = VS.Monetization ? VS.Monetization.getCapabilities() : { rewardedAds: false };
 
     const btn = global.document.createElement('button');
     btn.className = `game-btn w-full min-w-0 rounded-2xl p-2.5 sm:p-3 text-left flex flex-col justify-between gap-1.5 ${
@@ -447,12 +400,8 @@
           const packMeta = VS.Levels.getPackMeta(lockInfo.packId);
           const packName = packMeta ? packMeta.name : 'this pack';
           const totalStars = VS.Storage.getTotalStars();
-          const toastMsg = caps.iap
-            ? `Unlock "${packName}" (${VS.Monetization ? VS.Monetization.getProductPrice(packMeta.productId, packMeta.defaultPrice) : packMeta.defaultPrice} or ${packMeta.fallbackCoinPrice} Coins, or Go Pro) to play "${lv.name}".`
-            : `Earn ${packMeta ? packMeta.unlockStars : 0}★ (${totalStars}/${packMeta ? packMeta.unlockStars : 0}★) or spend ${packMeta ? packMeta.fallbackCoinPrice : 0} Coins to unlock "${packName}".`;
-          const actionLabel = caps.iap
-            ? `Unlock ${packName}`
-            : `Unlock (${packMeta ? packMeta.fallbackCoinPrice : 0} Coins)`;
+          const toastMsg = `Earn ${packMeta ? packMeta.unlockStars : 0}★ (${totalStars}/${packMeta ? packMeta.unlockStars : 0}★) or spend ${packMeta ? packMeta.fallbackCoinPrice : 0} Coins to unlock "${packName}".`;
+          const actionLabel = `Unlock (${packMeta ? packMeta.fallbackCoinPrice : 0} Coins)`;
           showLevelLockToast(
             toastMsg,
             actionLabel,
@@ -544,34 +493,12 @@
     if (!panel || !VS.Levels.getPremiumPacks) return;
     panel.innerHTML = '';
 
-    const caps = VS.Monetization ? VS.Monetization.getCapabilities() : { iap: false };
-    const effectivePro = Boolean(caps.iap && VS.Storage.isPro());
     const totalStars = VS.Storage.getTotalStars();
     const packs = VS.Levels.getPremiumPacks();
     if (packs.length === 0) return;
 
     if (!packs.some((p) => p.id === activePremiumPackId)) {
       activePremiumPackId = packs[0].id;
-    }
-
-    if (!effectivePro && caps.iap) {
-      const proPrice = VS.Monetization
-        ? VS.Monetization.getProductPrice(VS.CONFIG.PRO_PRODUCT_ID, '$4.99')
-        : '$4.99';
-      const banner = global.document.createElement('div');
-      banner.className = 'rounded-2xl p-3 border border-amber-400/40 bg-amber-500/15 flex items-center justify-between gap-2 shrink-0';
-      banner.innerHTML = `
-        <div class="min-w-0">
-          <div class="text-xs font-extrabold text-amber-200">Pro Bundle — ${proPrice}</div>
-          <div class="text-[10px] text-amber-100/80">All 4 Packs (400 levels) + No Ads + Prestige Set + 500 Coins</div>
-        </div>
-        <button type="button" class="shrink-0 game-btn game-btn-gold rounded-xl px-3 py-1.5 text-[11px] font-extrabold">Go Pro</button>
-      `;
-      banner.querySelector('button').addEventListener('click', () => {
-        VS.Sound.unlock();
-        openProModal();
-      });
-      panel.appendChild(banner);
     }
 
     const packMap = new Map();
@@ -615,10 +542,6 @@
     const header = global.document.createElement('div');
     header.className = 'flex flex-col gap-2';
 
-    const priceLabel = caps.iap
-      ? (VS.Monetization ? VS.Monetization.getProductPrice(pack.productId, pack.defaultPrice) : pack.defaultPrice)
-      : `${pack.fallbackCoinPrice} Coins`;
-
     header.innerHTML = `
       <div class="flex items-start justify-between gap-2 flex-wrap">
         <div class="min-w-0">
@@ -639,30 +562,8 @@
     if (owned) {
       const badge = global.document.createElement('span');
       badge.className = 'mono text-[10px] font-extrabold px-2.5 py-1 rounded-full bg-emerald-500/20 text-emerald-300 border border-emerald-400/30 inline-block';
-      badge.textContent = effectivePro ? 'PRO UNLOCKED' : 'UNLOCKED';
+      badge.textContent = 'UNLOCKED';
       actionWrap.appendChild(badge);
-    } else if (caps.iap) {
-      const buyBtn = global.document.createElement('button');
-      buyBtn.type = 'button';
-      buyBtn.className = 'game-btn game-btn-gold rounded-xl px-2.5 py-1.5 text-[11px] font-extrabold';
-      buyBtn.textContent = `Unlock ${priceLabel}`;
-      buyBtn.addEventListener('click', async () => {
-        if (!VS.Monetization) return;
-        const res = await VS.Monetization.purchasePack(pack.id);
-        handlePackUnlockResult(res, pack.name);
-      });
-      actionWrap.appendChild(buyBtn);
-
-      const coinBtn = global.document.createElement('button');
-      coinBtn.type = 'button';
-      coinBtn.className = 'game-btn rounded-xl px-2.5 py-1.5 text-[11px] font-bold text-amber-200';
-      coinBtn.textContent = `${pack.fallbackCoinPrice} Coins`;
-      coinBtn.addEventListener('click', async () => {
-        if (!VS.Monetization) return;
-        const res = await VS.Monetization.purchasePack(pack.id, { useCoins: true });
-        handlePackUnlockResult(res, pack.name);
-      });
-      actionWrap.appendChild(coinBtn);
     } else {
       if (pack.unlockStars > 0) {
         const starPill = global.document.createElement('span');
@@ -851,7 +752,6 @@
       const owned = VS.Monetization.isCosmeticOwned(activeShopTab, item.id);
       const isTrial = activeTrialId === item.id;
       const isActive = activeId === item.id;
-      const canBuyCoins = VS.Monetization.canBuyCosmeticWithCoins(activeShopTab, item);
 
       const card = global.document.createElement('div');
       card.className = `bg-slate-900/75 rounded-2xl p-3 border flex flex-col justify-between gap-2 ${
@@ -864,9 +764,7 @@
       } else if (isActive) {
         badgeHtml = '<span class="mono text-[9px] font-extrabold px-1.5 py-0.5 rounded bg-sky-500/20 text-sky-300 border border-sky-400/30">EQUIPPED</span>';
       } else if (item.proExclusive && !owned) {
-        badgeHtml = caps.iap
-          ? '<span class="mono text-[9px] font-extrabold px-1.5 py-0.5 rounded bg-amber-500/20 text-amber-300 border border-amber-400/30">PRO</span>'
-          : '<span class="mono text-[9px] font-extrabold px-1.5 py-0.5 rounded bg-amber-500/20 text-amber-300 border border-amber-400/30">ELITE</span>';
+        badgeHtml = '<span class="mono text-[9px] font-extrabold px-1.5 py-0.5 rounded bg-amber-500/20 text-amber-300 border border-amber-400/30">ELITE</span>';
       } else if (owned) {
         badgeHtml = '<span class="mono text-[9px] font-bold px-1.5 py-0.5 rounded bg-slate-800 text-slate-300 border border-slate-700">OWNED</span>';
       }
@@ -905,7 +803,7 @@
             setShopStatus(`Equipped "${item.name}"!`, 'text-sky-300');
           });
         }
-      } else if (canBuyCoins) {
+      } else {
         const affordable = coins >= item.price;
         primaryBtn.className = `game-btn ${affordable ? 'game-btn-gold' : ''} rounded-xl py-1.5 px-2 text-[11px] font-extrabold ${affordable ? '' : 'text-amber-300/80'}`;
         primaryBtn.textContent = `Buy • ${item.price} V`;
@@ -917,12 +815,6 @@
             VS.Sound.playBump();
             setShopStatus(`Need ${res.needed} more coins for "${item.name}".`, 'text-amber-300');
           }
-        });
-      } else {
-        primaryBtn.className = 'game-btn game-btn-gold rounded-xl py-1.5 px-2 text-[11px] font-extrabold';
-        primaryBtn.textContent = 'Unlock with Pro';
-        primaryBtn.addEventListener('click', () => {
-          openProModal();
         });
       }
       btnStack.appendChild(primaryBtn);
@@ -948,15 +840,6 @@
     });
   }
 
-  function openProModal() {
-    const caps = VS.Monetization ? VS.Monetization.getCapabilities() : { iap: false };
-    if (!caps.iap) return;
-    const statusEl = byId('pro-status');
-    if (statusEl) statusEl.textContent = '';
-    refreshEconomyUI();
-    showModal('modal-pro');
-  }
-
   function showWinModal(data) {
     byId('win-stars').innerHTML = [1, 2, 3].map((n) => renderStarSVG(n <= data.stars, 'w-10 h-10')).join('');
     byId('win-title').textContent =
@@ -967,7 +850,6 @@
     byId('win-par').textContent = data.par;
 
     const coinsText = byId('win-coins-text');
-    const proBadge = byId('win-pro-2x-badge');
     const doubleBtn = byId('btn-win-double');
     const coinsEarned = data.coinsEarned || 0;
     const baseCoinsEarned = data.baseCoinsEarned || 0;
@@ -983,13 +865,9 @@
         coinsText.textContent = 'Already mastered • 0 bonus coins';
       }
     }
-    if (proBadge) {
-      proBadge.classList.toggle('hidden', !data.proAutoDoubled);
-    }
 
-    const caps = VS.Monetization ? VS.Monetization.getCapabilities() : { rewardedAds: false, iap: false };
-    const effectivePro = Boolean(caps.iap && VS.Storage.isPro());
-    const canDouble = !effectivePro && baseCoinsEarned > 0 && caps.rewardedAds;
+    const caps = VS.Monetization ? VS.Monetization.getCapabilities() : { rewardedAds: false };
+    const canDouble = baseCoinsEarned > 0 && caps.rewardedAds;
     if (doubleBtn) {
       doubleBtn.classList.toggle('hidden', !canDouble);
       doubleBtn.disabled = false;
@@ -1019,9 +897,7 @@
     } else if (!data.nextUnlocked && data.nextLockInfo && data.nextLockInfo.reason === 'pack') {
       const packMeta = VS.Levels.getPackMeta(data.nextLockInfo.packId);
       const packName = packMeta ? packMeta.name : 'this pack';
-      unlockMsg.textContent = caps.iap
-        ? `Unlock "${packName}" (or Go Pro) to continue to "${data.nextLevel.name}"`
-        : `Earn ${packMeta ? packMeta.unlockStars : 0}★ (${data.newStars}/${packMeta ? packMeta.unlockStars : 0}★) or spend ${packMeta ? packMeta.fallbackCoinPrice : 0} Coins to unlock "${packName}"!`;
+      unlockMsg.textContent = `Earn ${packMeta ? packMeta.unlockStars : 0}★ (${data.newStars}/${packMeta ? packMeta.unlockStars : 0}★) or spend ${packMeta ? packMeta.fallbackCoinPrice : 0} Coins to unlock "${packName}"!`;
       unlockMsg.classList.remove('hidden');
     } else if (!data.nextUnlocked) {
       unlockMsg.textContent =
@@ -1111,7 +987,7 @@
     if (!resetConfirmArmed) {
       resetConfirmArmed = true;
       resetBtn.textContent = 'Tap Again to Confirm Reset';
-      resetNote.textContent = 'Clears stars & scores (keeps Pro, packs & cosmetics).';
+      resetNote.textContent = 'Clears stars & scores (keeps unlocked packs, coins & cosmetics).';
       if (resetConfirmTimer) global.clearTimeout(resetConfirmTimer);
       resetConfirmTimer = global.setTimeout(() => {
         disarmResetProgress();
@@ -1166,7 +1042,6 @@
     setShopTab,
     setShopStatus,
     renderShopGrid,
-    openProModal,
     showWinModal,
     getPendingWinDoubleCoins,
     clearPendingWinDoubleCoins,
