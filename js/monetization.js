@@ -36,7 +36,7 @@
         if (p && p.id) products[p.id] = p;
       });
     }
-    if (VS.Storage && VS.Storage.isPro()) {
+    if (VS.Storage && VS.Storage.isPro() && getCapabilities().iap) {
       applyEntitlements([CONFIG.PRO_PRODUCT_ID]);
     }
   }
@@ -81,7 +81,7 @@
     const item = VS.Cosmetics.getById(category, id);
     if (!item || item.id !== id) return false;
     if (VS.Storage.isCosmeticOwned(category, id)) return true;
-    if (item.proExclusive && VS.Storage.isPro()) return true;
+    if (item.proExclusive && getCapabilities().iap && VS.Storage.isPro()) return true;
     return item.price === 0 && !item.proExclusive;
   }
 
@@ -269,7 +269,7 @@
   }
 
   function shouldShowInterstitial(nowMs = Date.now()) {
-    if (VS.Storage && VS.Storage.isPro()) {
+    if (getCapabilities().iap && VS.Storage && VS.Storage.isPro()) {
       return { show: false, reason: 'pro' };
     }
     if (!getCapabilities().interstitialAds) {
@@ -411,8 +411,17 @@
     return Boolean(VS.Platform && VS.Platform.getAdapterId() === 'mock');
   }
 
+  function isDevUiEnabled() {
+    return Boolean(
+      isMockMode() &&
+      VS.Platform &&
+      typeof VS.Platform.isDevEnvironment === 'function' &&
+      VS.Platform.isDevEnvironment()
+    );
+  }
+
   function devTogglePro() {
-    if (!isMockMode() || !VS.Storage) return false;
+    if (!isDevUiEnabled() || !VS.Storage) return false;
     if (VS.Storage.isPro()) {
       VS.Storage.setPro(false);
     } else {
@@ -424,14 +433,14 @@
   }
 
   function devAddCoins(amount = 500) {
-    if (!isMockMode() || !VS.Storage) return 0;
+    if (!isDevUiEnabled() || !VS.Storage) return 0;
     const total = VS.Storage.addCoins(amount);
     refreshEconomyUI();
     return total;
   }
 
   function devResetCooldowns() {
-    if (!isMockMode() || !VS.Storage) return;
+    if (!isDevUiEnabled() || !VS.Storage) return;
     clearsSinceInterstitial = CONFIG.INTERSTITIAL_LEVEL_INTERVAL;
     lastInterstitialAt = 0;
     lastRewardedAt = 0;
@@ -440,13 +449,13 @@
   }
 
   function devSetSimulateAdFail(val) {
-    if (!isMockMode() || !VS.MockAdapter) return;
+    if (!isDevUiEnabled() || !VS.MockAdapter) return;
     VS.MockAdapter.setSimulateAdFail(val);
     refreshEconomyUI();
   }
 
   function devResetMockEconomy() {
-    if (!isMockMode() || !VS.Storage) return;
+    if (!isDevUiEnabled() || !VS.Storage) return;
     trials = { themes: null, bots: null, crates: null };
     trialPendingExpiry = false;
     clearsSinceInterstitial = 0;
@@ -499,6 +508,7 @@
     purchasePack,
     restorePurchases,
     isMockMode,
+    isDevUiEnabled,
     devTogglePro,
     devAddCoins,
     devResetCooldowns,

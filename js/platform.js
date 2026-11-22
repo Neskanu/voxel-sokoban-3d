@@ -14,24 +14,81 @@
   const adapters = new Map();
   let activeAdapter = null;
 
+  const CRAZYGAMES_HOST_RE = /(^|\.)(crazygames|crazygames-cdn|crazygamesx|1001juegos|speelspelletjes)\./i;
+  const LOCAL_HOST_SET = new Set(['localhost', '127.0.0.1', '::1', '0.0.0.0', '[::1]']);
+
+  function getSearchParams() {
+    try {
+      if (global.location && global.location.search) {
+        return new global.URLSearchParams(global.location.search);
+      }
+    } catch (e) {
+      // Ignore URL parsing issues
+    }
+    return null;
+  }
+
+  function isLocalOrFileHost() {
+    if (!global.location) return false;
+    if (global.location.protocol === 'file:') return true;
+    const host = String(global.location.hostname || '').toLowerCase();
+    return LOCAL_HOST_SET.has(host);
+  }
+
+  function isDevEnvironment() {
+    if (global.__VS_DEV__ === true) return true;
+    const params = getSearchParams();
+    if (params && params.get('dev') === '1') return true;
+    return isLocalOrFileHost();
+  }
+
+  function isCrazyGamesEnvironment() {
+    const params = getSearchParams();
+    if (params) {
+      const p = params.get('platform') || params.get('adapter');
+      if (p === 'crazygames') return true;
+    }
+    if (global.location && CRAZYGAMES_HOST_RE.test(String(global.location.hostname || ''))) {
+      return true;
+    }
+    try {
+      if (
+        !isLocalOrFileHost() &&
+        global.document &&
+        typeof global.document.referrer === 'string' &&
+        /crazygames\./i.test(global.document.referrer)
+      ) {
+        return true;
+      }
+    } catch (e) {}
+    if (
+      global.CrazyGames &&
+      global.CrazyGames.SDK &&
+      global.CrazyGames.SDK.environment === 'crazygames'
+    ) {
+      return true;
+    }
+    return false;
+  }
+
   function registerAdapter(adapter) {
     if (!adapter || !adapter.id) return;
     adapters.set(adapter.id, adapter);
   }
 
   function resolveAdapterId(preferredId) {
-    try {
-      if (global.location && global.location.search) {
-        const params = new global.URLSearchParams(global.location.search);
-        const paramId = params.get('adapter');
-        if (paramId && adapters.has(paramId)) return paramId;
-      }
-    } catch (e) {
-      // Ignore URL parsing issues
+    const params = getSearchParams();
+    if (params) {
+      const paramId = params.get('platform') || params.get('adapter');
+      if (paramId && adapters.has(paramId)) return paramId;
     }
 
     if (typeof global.VOXEL_SOKOBAN_ADAPTER === 'string' && adapters.has(global.VOXEL_SOKOBAN_ADAPTER)) {
       return global.VOXEL_SOKOBAN_ADAPTER;
+    }
+
+    if (isCrazyGamesEnvironment() && adapters.has('crazygames')) {
+      return 'crazygames';
     }
 
     const fallbackId = preferredId || (VS.CONFIG && VS.CONFIG.ADAPTER) || 'mock';
@@ -68,6 +125,26 @@
       return Object.assign({}, DEFAULT_CAPABILITIES);
     }
     return Object.assign({}, DEFAULT_CAPABILITIES, activeAdapter.capabilities);
+  }
+
+  function isCrazyGamesMode() {
+    return getAdapterId() === 'crazygames';
+  }
+
+  function loadingStart() {
+    if (activeAdapter && typeof activeAdapter.loadingStart === 'function') {
+      try {
+        activeAdapter.loadingStart();
+      } catch (e) {}
+    }
+  }
+
+  function loadingStop() {
+    if (activeAdapter && typeof activeAdapter.loadingStop === 'function') {
+      try {
+        activeAdapter.loadingStop();
+      } catch (e) {}
+    }
   }
 
   function gameplayStart() {
@@ -165,6 +242,11 @@
     getAdapter,
     getAdapterId,
     getCapabilities,
+    isDevEnvironment,
+    isCrazyGamesEnvironment,
+    isCrazyGamesMode,
+    loadingStart,
+    loadingStop,
     gameplayStart,
     gameplayStop,
     happyTime,

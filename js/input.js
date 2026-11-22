@@ -123,19 +123,17 @@
     }, { passive: true });
   }
 
+  const PREVENT_SCROLL_KEYS = new Set([' ', 'ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight']);
+
   function setupKeyboardControls() {
     global.addEventListener('keydown', (e) => {
-      if (VS.Intro && VS.Intro.isActive()) {
-        if (e.key === 'Escape' || e.key === ' ' || e.key === 'Enter') {
-          e.preventDefault();
-          VS.Intro.skip();
-        }
-        return;
+      if (!isEditableTarget(e.target) && (PREVENT_SCROLL_KEYS.has(e.key) || e.code === 'Space')) {
+        e.preventDefault();
       }
 
-      if (e.key === 'Escape') {
-        if (VS.UI.closeTopModal()) {
-          e.preventDefault();
+      if (VS.Intro && VS.Intro.isActive()) {
+        if (e.key === ' ' || e.code === 'Space' || e.key === 'Enter') {
+          VS.Intro.skip();
         }
         return;
       }
@@ -159,19 +157,15 @@
       if (e.repeat && (key === 'z' || key === 'r')) return;
 
       if (key === 'arrowup' || key === 'w') {
-        if (key === 'arrowup') e.preventDefault();
         const [gx, gy] = VS.Game.screenDirToGrid('up');
         VS.Game.attemptMove(gx, gy);
       } else if (key === 'arrowdown' || key === 's') {
-        if (key === 'arrowdown') e.preventDefault();
         const [gx, gy] = VS.Game.screenDirToGrid('down');
         VS.Game.attemptMove(gx, gy);
       } else if (key === 'arrowleft' || key === 'a') {
-        if (key === 'arrowleft') e.preventDefault();
         const [gx, gy] = VS.Game.screenDirToGrid('left');
         VS.Game.attemptMove(gx, gy);
       } else if (key === 'arrowright' || key === 'd') {
-        if (key === 'arrowright') e.preventDefault();
         const [gx, gy] = VS.Game.screenDirToGrid('right');
         VS.Game.attemptMove(gx, gy);
       } else if (key === 'z' || key === 'backspace') {

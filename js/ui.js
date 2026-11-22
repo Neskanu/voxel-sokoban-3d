@@ -52,7 +52,7 @@
       global.clearInterval(shopCooldownTimer);
       shopCooldownTimer = null;
     }
-    if (VS.Platform && VS.Game && !VS.Game.state.menuOpen && !isAnyModalOpen()) {
+    if (VS.Platform && VS.Game && !VS.Game.state.menuOpen && !isAnyModalOpen() && !(VS.Intro && VS.Intro.isActive())) {
       VS.Platform.gameplayStart();
     }
   }
@@ -199,33 +199,34 @@
     const caps = VS.Monetization
       ? VS.Monetization.getCapabilities()
       : { rewardedAds: false, interstitialAds: false, iap: false, restorePurchases: false };
+    const effectivePro = Boolean(caps.iap && isPro);
 
     if (byId('hud-coins')) byId('hud-coins').textContent = coins.toLocaleString();
-    if (byId('hud-pro-badge')) byId('hud-pro-badge').classList.toggle('hidden', !isPro);
+    if (byId('hud-pro-badge')) byId('hud-pro-badge').classList.toggle('hidden', !effectivePro);
     if (byId('menu-coins')) byId('menu-coins').textContent = coins.toLocaleString();
     if (byId('shop-coins')) byId('shop-coins').textContent = coins.toLocaleString();
 
     const menuProBtn = byId('btn-menu-pro');
     const menuProLabel = byId('btn-menu-pro-label');
     if (menuProBtn && menuProLabel) {
-      if (!caps.iap && !isPro) {
+      if (!caps.iap) {
         menuProBtn.classList.add('hidden');
       } else {
         menuProBtn.classList.remove('hidden');
-        menuProLabel.textContent = isPro ? 'Pro Active ★ (2× Coins & No Ads)' : 'Go Pro • Remove Ads';
+        menuProLabel.textContent = effectivePro ? 'Pro Active ★ (2× Coins & No Ads)' : 'Go Pro • Remove Ads';
       }
     }
 
     const shopGoProBtn = byId('btn-shop-go-pro');
     if (shopGoProBtn) {
-      shopGoProBtn.classList.toggle('hidden', isPro || !caps.iap);
+      shopGoProBtn.classList.toggle('hidden', effectivePro || !caps.iap);
     }
 
     const proBuyBtn = byId('btn-pro-buy');
     if (proBuyBtn) {
       const price = VS.Monetization ? VS.Monetization.getProductPrice(VS.CONFIG.PRO_PRODUCT_ID, '$4.99') : '$4.99';
-      proBuyBtn.disabled = isPro;
-      proBuyBtn.textContent = isPro ? 'Voxel Sokoban Pro Active ✓' : `Unlock Pro — ${price}`;
+      proBuyBtn.disabled = effectivePro;
+      proBuyBtn.textContent = effectivePro ? 'Voxel Sokoban Pro Active ✓' : `Unlock Pro — ${price}`;
     }
 
     const proRestoreBtn = byId('btn-pro-restore');
@@ -240,9 +241,9 @@
 
     const devPanel = byId('settings-dev-monetization');
     if (devPanel && VS.Monetization) {
-      const isMock = VS.Monetization.isMockMode();
-      devPanel.classList.toggle('hidden', !isMock);
-      if (isMock) {
+      const showDevUi = VS.Monetization.isDevUiEnabled();
+      devPanel.classList.toggle('hidden', !showDevUi);
+      if (showDevUi) {
         const devProBtn = byId('btn-dev-toggle-pro');
         if (devProBtn) devProBtn.textContent = isPro ? 'Pro: ON (Toggle)' : 'Pro: OFF (Toggle)';
         const failEnabled = VS.MockAdapter ? VS.MockAdapter.getSimulateAdFail() : false;
@@ -445,15 +446,16 @@
         if (lockInfo.reason === 'pack') {
           const packMeta = VS.Levels.getPackMeta(lockInfo.packId);
           const packName = packMeta ? packMeta.name : 'this pack';
-          const priceLabel = packMeta
-            ? (caps.iap && VS.Monetization
-                ? VS.Monetization.getProductPrice(packMeta.productId, packMeta.defaultPrice)
-                : `${packMeta.fallbackCoinPrice} Coins`)
-            : 'Pack';
-          const coinInfo = packMeta && caps.iap ? ` or ${packMeta.fallbackCoinPrice} Coins` : '';
+          const totalStars = VS.Storage.getTotalStars();
+          const toastMsg = caps.iap
+            ? `Unlock "${packName}" (${VS.Monetization ? VS.Monetization.getProductPrice(packMeta.productId, packMeta.defaultPrice) : packMeta.defaultPrice} or ${packMeta.fallbackCoinPrice} Coins, or Go Pro) to play "${lv.name}".`
+            : `Earn ${packMeta ? packMeta.unlockStars : 0}★ (${totalStars}/${packMeta ? packMeta.unlockStars : 0}★) or spend ${packMeta ? packMeta.fallbackCoinPrice : 0} Coins to unlock "${packName}".`;
+          const actionLabel = caps.iap
+            ? `Unlock ${packName}`
+            : `Unlock (${packMeta ? packMeta.fallbackCoinPrice : 0} Coins)`;
           showLevelLockToast(
-            `Unlock "${packName}" (${priceLabel}${coinInfo}, or Go Pro) to play "${lv.name}".`,
-            `Unlock ${packName}`,
+            toastMsg,
+            actionLabel,
             async () => {
               if (!VS.Monetization) return;
               const res = await VS.Monetization.purchasePack(lockInfo.packId);
@@ -543,6 +545,8 @@
     panel.innerHTML = '';
 
     const caps = VS.Monetization ? VS.Monetization.getCapabilities() : { iap: false };
+    const effectivePro = Boolean(caps.iap && VS.Storage.isPro());
+    const totalStars = VS.Storage.getTotalStars();
     const packs = VS.Levels.getPremiumPacks();
     if (packs.length === 0) return;
 
@@ -550,7 +554,7 @@
       activePremiumPackId = packs[0].id;
     }
 
-    if (!VS.Storage.isPro() && caps.iap) {
+    if (!effectivePro && caps.iap) {
       const proPrice = VS.Monetization
         ? VS.Monetization.getProductPrice(VS.CONFIG.PRO_PRODUCT_ID, '$4.99')
         : '$4.99';
@@ -635,7 +639,7 @@
     if (owned) {
       const badge = global.document.createElement('span');
       badge.className = 'mono text-[10px] font-extrabold px-2.5 py-1 rounded-full bg-emerald-500/20 text-emerald-300 border border-emerald-400/30 inline-block';
-      badge.textContent = VS.Storage.isPro() ? 'PRO UNLOCKED' : 'OWNED';
+      badge.textContent = effectivePro ? 'PRO UNLOCKED' : 'UNLOCKED';
       actionWrap.appendChild(badge);
     } else if (caps.iap) {
       const buyBtn = global.document.createElement('button');
@@ -660,6 +664,13 @@
       });
       actionWrap.appendChild(coinBtn);
     } else {
+      if (pack.unlockStars > 0) {
+        const starPill = global.document.createElement('span');
+        starPill.className = 'mono text-[10px] font-bold px-2 py-1 rounded-xl bg-slate-800/90 text-amber-300 border border-amber-400/30 inline-block';
+        starPill.textContent = `★ ${totalStars}/${pack.unlockStars}`;
+        actionWrap.appendChild(starPill);
+      }
+
       const coinBtn = global.document.createElement('button');
       coinBtn.type = 'button';
       coinBtn.className = 'game-btn game-btn-gold rounded-xl px-2.5 py-1.5 text-[11px] font-extrabold';
@@ -853,7 +864,9 @@
       } else if (isActive) {
         badgeHtml = '<span class="mono text-[9px] font-extrabold px-1.5 py-0.5 rounded bg-sky-500/20 text-sky-300 border border-sky-400/30">EQUIPPED</span>';
       } else if (item.proExclusive && !owned) {
-        badgeHtml = '<span class="mono text-[9px] font-extrabold px-1.5 py-0.5 rounded bg-amber-500/20 text-amber-300 border border-amber-400/30">PRO</span>';
+        badgeHtml = caps.iap
+          ? '<span class="mono text-[9px] font-extrabold px-1.5 py-0.5 rounded bg-amber-500/20 text-amber-300 border border-amber-400/30">PRO</span>'
+          : '<span class="mono text-[9px] font-extrabold px-1.5 py-0.5 rounded bg-amber-500/20 text-amber-300 border border-amber-400/30">ELITE</span>';
       } else if (owned) {
         badgeHtml = '<span class="mono text-[9px] font-bold px-1.5 py-0.5 rounded bg-slate-800 text-slate-300 border border-slate-700">OWNED</span>';
       }
@@ -936,6 +949,8 @@
   }
 
   function openProModal() {
+    const caps = VS.Monetization ? VS.Monetization.getCapabilities() : { iap: false };
+    if (!caps.iap) return;
     const statusEl = byId('pro-status');
     if (statusEl) statusEl.textContent = '';
     refreshEconomyUI();
@@ -972,8 +987,9 @@
       proBadge.classList.toggle('hidden', !data.proAutoDoubled);
     }
 
-    const caps = VS.Monetization ? VS.Monetization.getCapabilities() : { rewardedAds: false };
-    const canDouble = !VS.Storage.isPro() && baseCoinsEarned > 0 && caps.rewardedAds;
+    const caps = VS.Monetization ? VS.Monetization.getCapabilities() : { rewardedAds: false, iap: false };
+    const effectivePro = Boolean(caps.iap && VS.Storage.isPro());
+    const canDouble = !effectivePro && baseCoinsEarned > 0 && caps.rewardedAds;
     if (doubleBtn) {
       doubleBtn.classList.toggle('hidden', !canDouble);
       doubleBtn.disabled = false;
@@ -993,13 +1009,19 @@
     }
 
     const unlockMsg = byId('win-unlock-msg');
-    if (data.newlyUnlockedCount > 0) {
+    if (data.newlyUnlockedPacks && data.newlyUnlockedPacks.length > 0) {
+      const names = data.newlyUnlockedPacks.map((p) => p.name).join(', ');
+      unlockMsg.textContent = `★ Pack Unlocked: ${names} (+${data.newlyUnlockedPacks.length * 100} levels)!`;
+      unlockMsg.classList.remove('hidden');
+    } else if (data.newlyUnlockedCount > 0) {
       unlockMsg.textContent = `★ New levels unlocked! (${data.newlyUnlockedCount} added)`;
       unlockMsg.classList.remove('hidden');
     } else if (!data.nextUnlocked && data.nextLockInfo && data.nextLockInfo.reason === 'pack') {
       const packMeta = VS.Levels.getPackMeta(data.nextLockInfo.packId);
       const packName = packMeta ? packMeta.name : 'this pack';
-      unlockMsg.textContent = `Unlock "${packName}" (or Go Pro) to continue to "${data.nextLevel.name}"`;
+      unlockMsg.textContent = caps.iap
+        ? `Unlock "${packName}" (or Go Pro) to continue to "${data.nextLevel.name}"`
+        : `Earn ${packMeta ? packMeta.unlockStars : 0}★ (${data.newStars}/${packMeta ? packMeta.unlockStars : 0}★) or spend ${packMeta ? packMeta.fallbackCoinPrice : 0} Coins to unlock "${packName}"!`;
       unlockMsg.classList.remove('hidden');
     } else if (!data.nextUnlocked) {
       unlockMsg.textContent =

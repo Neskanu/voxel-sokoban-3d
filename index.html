@@ -9,6 +9,7 @@
   <script src="https://cdn.tailwindcss.com"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/tone/14.8.49/Tone.js"></script>
+  <script src="https://sdk.crazygames.com/crazygames-sdk-v3.js"></script>
 
   <!-- Fonts -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -16,7 +17,7 @@
   <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@600;700&family=Outfit:wght@500;600;700;800&display=swap" rel="stylesheet">
 
   <!-- App Stylesheet -->
-  <link rel="stylesheet" href="css/styles.css?v=20261122-2" />
+  <link rel="stylesheet" href="css/styles.css?v=20261122-3" />
 
   <!-- Critical Inline Loader Styles (Zero-Flash First Paint) -->
   <script>window.__VS_BOOT_START = (window.performance ? performance.now() : Date.now());</script>
@@ -205,7 +206,7 @@
       <div id="toast-hint" class="pointer-events-none transition-all duration-500 max-w-full opacity-0">
         <div class="glass-panel rounded-full px-3.5 py-1.5 text-[11px] sm:text-xs text-slate-300 flex items-center justify-center gap-2 text-center">
           <span class="w-2 h-2 shrink-0 rounded-full bg-sky-400 animate-pulse"></span>
-          <span>Swipe to scroll map • Tap tiles or use D-Pad to move</span>
+          <span>Arrow Keys / WASD, Tap Tiles, or D-Pad to move crates</span>
         </div>
       </div>
     </div>
@@ -517,9 +518,9 @@
       <div class="space-y-2 text-left bg-slate-900/70 rounded-2xl p-3.5 border border-slate-700/60 mb-4 text-xs text-slate-200">
         <div class="flex items-center gap-2"><span class="text-emerald-400 font-bold">✓</span><span>No interstitial ads ever</span></div>
         <div class="flex items-center gap-2"><span class="text-emerald-400 font-bold">✓</span><span>Permanent 2× Voxel Coins on every win</span></div>
-        <div class="flex items-center gap-2"><span class="text-emerald-400 font-bold">✓</span><span>Unlock All 4 Packs — 400 Levels</span></div>
+        <div class="flex items-center gap-2"><span class="text-emerald-400 font-bold">✓</span><span>Unlock all 4 Premium Packs (400 extra levels — 500 total with 100 free)</span></div>
         <div class="flex items-center gap-2"><span class="text-emerald-400 font-bold">✓</span><span>Prestige Set (Obsidian Vault, Gilded King, Diamond Vault)</span></div>
-        <div class="flex items-center gap-2"><span class="text-emerald-400 font-bold">✓</span><span>+500 Bonus Coins &amp; instant access to all 500 levels</span></div>
+        <div class="flex items-center gap-2"><span class="text-emerald-400 font-bold">✓</span><span>+500 Bonus Voxel Coins to spend in the Shop</span></div>
       </div>
 
       <p id="pro-status" class="text-xs text-amber-300 min-h-[1rem] mb-3"></p>
@@ -609,21 +610,22 @@
   </div>
 
   <!-- Application Modules (Loaded in dependency order) -->
-  <script src="js/config.js?v=20261122-2"></script>
-  <script src="js/levels-data.js?v=20261122-2"></script>
-  <script src="js/levels.js?v=20261122-2"></script>
-  <script src="js/storage.js?v=20261122-2"></script>
-  <script src="js/audio.js?v=20261122-2"></script>
-  <script src="js/cosmetics.js?v=20261122-2"></script>
-  <script src="js/voxels.js?v=20261122-2"></script>
-  <script src="js/renderer.js?v=20261122-2"></script>
-  <script src="js/platform.js?v=20261122-2"></script>
-  <script src="js/adapters/mock-adapter.js?v=20261122-2"></script>
-  <script src="js/monetization.js?v=20261122-2"></script>
-  <script src="js/game.js?v=20261122-2"></script>
-  <script src="js/intro.js?v=20261122-2"></script>
-  <script src="js/ui.js?v=20261122-2"></script>
-  <script src="js/input.js?v=20261122-2"></script>
-  <script src="js/main.js?v=20261122-2"></script>
+  <script src="js/config.js?v=20261122-3"></script>
+  <script src="js/levels-data.js?v=20261122-3"></script>
+  <script src="js/levels.js?v=20261122-3"></script>
+  <script src="js/storage.js?v=20261122-3"></script>
+  <script src="js/audio.js?v=20261122-3"></script>
+  <script src="js/cosmetics.js?v=20261122-3"></script>
+  <script src="js/voxels.js?v=20261122-3"></script>
+  <script src="js/renderer.js?v=20261122-3"></script>
+  <script src="js/platform.js?v=20261122-3"></script>
+  <script src="js/adapters/mock-adapter.js?v=20261122-3"></script>
+  <script src="js/adapters/crazygames-adapter.js?v=20261122-3"></script>
+  <script src="js/monetization.js?v=20261122-3"></script>
+  <script src="js/game.js?v=20261122-3"></script>
+  <script src="js/intro.js?v=20261122-3"></script>
+  <script src="js/ui.js?v=20261122-3"></script>
+  <script src="js/input.js?v=20261122-3"></script>
+  <script src="js/main.js?v=20261122-3"></script>
 </body>
 </html>

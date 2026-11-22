@@ -7,6 +7,7 @@
     constructor() {
       this.enabled = true;
       this.adMuted = false;
+      this.platformMuted = false;
       this.initialized = false;
       this.stepSynth = null;
       this.pushSynth = null;
@@ -15,7 +16,7 @@
 
     syncMute() {
       if (this.initialized && typeof global.Tone !== 'undefined' && global.Tone.Destination) {
-        global.Tone.Destination.mute = this.adMuted || !this.enabled;
+        global.Tone.Destination.mute = this.adMuted || this.platformMuted || !this.enabled;
       }
     }
 
@@ -60,12 +61,21 @@
       this.syncMute();
     }
 
+    setPlatformMuted(val) {
+      this.platformMuted = Boolean(val);
+      this.syncMute();
+    }
+
+    isPlatformMuted() {
+      return this.platformMuted;
+    }
+
     isEnabled() {
       return this.enabled;
     }
 
     canPlay() {
-      return this.enabled && !this.adMuted && this.initialized;
+      return this.enabled && !this.adMuted && !this.platformMuted && this.initialized;
     }
 
     playStep() {

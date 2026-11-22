@@ -1,0 +1,9 @@
+{
+  "name": "voxel-sokoban-3d",
+  "version": "1.2.0",
+  "private": true,
+  "description": "3D Voxel Puzzle Diorama built with Three.js, Tailwind CSS, and Tone.js",
+  "scripts": {
+    "build": "node scripts/build.js"
+  }
+}

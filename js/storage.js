@@ -137,9 +137,22 @@
     return Object.values(saveData.levels).reduce((sum, rec) => sum + (rec.bestScore || 0), 0);
   }
 
+  function isIapEnabled() {
+    return Boolean(VS.Platform && VS.Platform.getCapabilities().iap);
+  }
+
   function isPackOwned(packId) {
     if (!packId) return false;
-    return Boolean(saveData.economy.isPro || saveData.economy.ownedPacks.includes(packId));
+    if (saveData.economy.ownedPacks.includes(packId)) return true;
+    const iapEnabled = isIapEnabled();
+    if (iapEnabled && saveData.economy.isPro) return true;
+    if (!iapEnabled) {
+      const meta = VS.Levels && VS.Levels.getPackMeta ? VS.Levels.getPackMeta(packId) : null;
+      if (meta && meta.unlockStars > 0 && getTotalStars() >= meta.unlockStars) {
+        return true;
+      }
+    }
+    return false;
   }
 
   const FREE_PACK_IDS = new Set(['starter', 'classic', 'custom']);
@@ -155,9 +168,12 @@
       if (level.freePreview || isPackOwned(packId)) {
         return { unlocked: true, reason: null };
       }
-      return { unlocked: false, reason: 'pack', packId };
+      const meta = VS.Levels && VS.Levels.getPackMeta ? VS.Levels.getPackMeta(packId) : null;
+      const requiredStars = (meta && meta.unlockStars) || 0;
+      const missingStars = Math.max(0, requiredStars - getTotalStars());
+      return { unlocked: false, reason: 'pack', packId, requiredStars, missingStars };
     }
-    if (saveData.economy.isPro || saveData.economy.adUnlockedLevels.includes(level.id)) {
+    if ((isIapEnabled() && saveData.economy.isPro) || saveData.economy.adUnlockedLevels.includes(level.id)) {
       return { unlocked: true, reason: null };
     }
     const requiredStars = level.unlockStars || 0;
@@ -208,7 +224,7 @@
       const firstClearCoins = prevRec ? 0 : CONFIG.COIN_FIRST_CLEAR;
       const starDelta = Math.max(0, result.stars - prevLevelStars);
       baseCoinsEarned = firstClearCoins + starDelta * CONFIG.COIN_PER_STAR;
-      proAutoDoubled = Boolean(saveData.economy.isPro && baseCoinsEarned > 0);
+      proAutoDoubled = Boolean(isIapEnabled() && saveData.economy.isPro && baseCoinsEarned > 0);
       coinsEarned = proAutoDoubled ? baseCoinsEarned * 2 : baseCoinsEarned;
       saveData.economy.coins += coinsEarned;
       saveData.economy.totalClears += 1;

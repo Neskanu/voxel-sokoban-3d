@@ -325,6 +325,12 @@
     const newlyUnlocked = allLevels.filter(
       (l) => !l.premiumPackId && (l.unlockStars || 0) > winStats.prevStars && (l.unlockStars || 0) <= winStats.newStars
     );
+    const iapEnabled = Boolean(VS.Platform && VS.Platform.getCapabilities().iap);
+    const newlyUnlockedPacks = !iapEnabled && VS.Levels.getPremiumPacks
+      ? VS.Levels.getPremiumPacks().filter(
+          (p) => (p.unlockStars || 0) > winStats.prevStars && (p.unlockStars || 0) <= winStats.newStars
+        )
+      : [];
 
     const pWorld = VS.Renderer.gridToWorld(state.player.x, state.player.y);
     const colors = [0x34d399, 0x38bdf8, 0xfbbf24, 0xf472b6];
@@ -359,7 +365,8 @@
         nextLevel: nextLv,
         nextUnlocked,
         nextLockInfo,
-        newlyUnlockedCount: newlyUnlocked.length
+        newlyUnlockedCount: newlyUnlocked.length,
+        newlyUnlockedPacks
       });
     }, 420);
     state.winTimers.push(modalTimerId);

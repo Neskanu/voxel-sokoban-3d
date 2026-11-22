@@ -406,7 +406,8 @@
     }
     if (VS.Storage) {
       if (VS.Storage.isCosmeticOwned(category, item.id)) return true;
-      if (item.proExclusive && VS.Storage.isPro()) return true;
+      const iapEnabled = Boolean(VS.Platform && VS.Platform.getCapabilities().iap);
+      if (item.proExclusive && iapEnabled && VS.Storage.isPro()) return true;
     }
     return item.price === 0 && !item.proExclusive;
   }

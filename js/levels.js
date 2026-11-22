@@ -27,6 +27,7 @@
       difficulty: 'Medium-Hard',
       defaultPrice: '$1.99',
       fallbackCoinPrice: 600,
+      unlockStars: 120,
       accent: 'sky'
     },
     'frost-citadel': {
@@ -38,6 +39,7 @@
       difficulty: 'Hard',
       defaultPrice: '$2.49',
       fallbackCoinPrice: 900,
+      unlockStars: 300,
       accent: 'cyan'
     },
     'sandstone-labyrinth': {
@@ -49,6 +51,7 @@
       difficulty: 'Expert',
       defaultPrice: '$2.99',
       fallbackCoinPrice: 1200,
+      unlockStars: 500,
       accent: 'orange'
     },
     grandmaster: {
@@ -60,6 +63,7 @@
       difficulty: 'Grandmaster',
       defaultPrice: '$3.49',
       fallbackCoinPrice: 1500,
+      unlockStars: 750,
       accent: 'amber'
     }
   };
