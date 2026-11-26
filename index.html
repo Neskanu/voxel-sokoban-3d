@@ -5,10 +5,10 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
   <title>Crate Expectations</title>
 
-  <!-- External Libraries -->
-  <script src="https://cdn.tailwindcss.com"></script>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/tone/14.8.49/Tone.js"></script>
+  <!-- Self-Hosted Libraries -->
+  <link rel="stylesheet" href="vendor/tailwind.min.css?v=20261126-2" />
+  <script src="vendor/three.min.js"></script>
+  <script src="vendor/Tone.js"></script>
   <script src="https://sdk.crazygames.com/crazygames-sdk-v3.js"></script>
 
   <!-- Fonts -->
@@ -17,7 +17,7 @@
   <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@600;700&family=Outfit:wght@500;600;700;800;900&display=swap" rel="stylesheet">
 
   <!-- App Stylesheet -->
-  <link rel="stylesheet" href="css/styles.css?v=20261122-10" />
+  <link rel="stylesheet" href="css/styles.css?v=20261126-2" />
 
   <!-- Critical Inline Loader & Voxel Wordmark Styles (Zero-Flash First Paint) -->
   <script>
@@ -521,11 +521,13 @@
         </div>
       </div>
 
-      <!-- Subtle Hint Toast -->
-      <div id="toast-hint" class="pointer-events-none transition-all duration-500 max-w-full opacity-0">
-        <div class="glass-panel rounded-full px-3.5 py-1.5 text-[11px] sm:text-xs text-slate-300 flex items-center justify-center gap-2 text-center">
-          <span class="w-2 h-2 shrink-0 rounded-full bg-sky-400 animate-pulse"></span>
-          <span>Arrow Keys / WASD, Tap Tiles, or D-Pad to move crates</span>
+      <!-- Subtle Hint / Onboarding / Deadlock Toast -->
+      <div id="toast-hint" class="pointer-events-none transition-all duration-300 max-w-full opacity-0">
+        <div id="toast-hint-inner" class="glass-panel rounded-full px-3.5 py-1.5 text-[11px] sm:text-xs text-slate-200 flex items-center justify-center gap-2 text-center flex-wrap">
+          <span id="toast-hint-dot" class="w-2 h-2 shrink-0 rounded-full bg-sky-400 animate-pulse"></span>
+          <span id="toast-hint-text" class="flex items-center gap-1.5 flex-wrap justify-center">
+            Use <span class="kbd-pill">W</span><span class="kbd-pill">A</span><span class="kbd-pill">S</span><span class="kbd-pill">D</span> or Arrows to push crates onto glowing goals
+          </span>
         </div>
       </div>
     </div>
@@ -534,18 +536,25 @@
   <!-- Bottom Controls Overlay -->
   <footer class="fixed bottom-0 left-0 right-0 z-20 pointer-events-none p-3 sm:p-5">
     <div class="max-w-3xl mx-auto flex items-end justify-between gap-3">
-      <div class="pointer-events-auto flex flex-col sm:flex-row gap-2.5">
-        <button id="btn-undo" class="game-btn rounded-2xl px-4 py-3 text-slate-100 font-semibold text-sm flex items-center gap-2" title="Undo Move (Z)">
+      <div class="pointer-events-auto flex flex-col sm:flex-row gap-2">
+        <button id="btn-undo" class="game-btn rounded-2xl px-3.5 py-2.5 sm:px-4 sm:py-3 text-slate-100 font-semibold text-sm flex items-center gap-2" title="Undo Move (Z)">
           <svg class="w-5 h-5 text-amber-400" fill="none" stroke="currentColor" stroke-width="2.2" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" d="M3 10h10a5 5 0 015 5v2M3 10l5-5M3 10l5 5"/>
           </svg>
           <span>Undo</span>
         </button>
-        <button id="btn-reset" class="game-btn rounded-2xl px-4 py-3 text-slate-100 font-semibold text-sm flex items-center gap-2" title="Restart Level (R)">
+        <button id="btn-reset" class="game-btn rounded-2xl px-3.5 py-2.5 sm:px-4 sm:py-3 text-slate-100 font-semibold text-sm flex items-center gap-2" title="Restart Level (R)">
           <svg class="w-5 h-5 text-rose-400" fill="none" stroke="currentColor" stroke-width="2.2" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9"/>
           </svg>
           <span>Reset</span>
+        </button>
+        <button id="btn-hint" class="game-btn rounded-2xl px-3.5 py-2.5 sm:px-4 sm:py-3 text-slate-100 font-semibold text-sm flex items-center gap-1.5" title="Show Next Optimal Move (H)">
+          <svg class="w-5 h-5 text-sky-400" fill="none" stroke="currentColor" stroke-width="2.2" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z"/>
+          </svg>
+          <span>Hint</span>
+          <span id="btn-hint-badge" class="mono text-[10px] font-extrabold px-1.5 py-0.5 rounded-full bg-sky-500/20 text-sky-300 border border-sky-400/35">Free</span>
         </button>
       </div>
 
@@ -576,7 +585,7 @@
   </footer>
 
   <!-- Level Select Modal -->
-  <div id="modal-levels" class="modal-backdrop modal-hidden fixed inset-0 z-50 bg-slate-950/75 backdrop-blur-sm flex items-center justify-center p-3 sm:p-4">
+  <div id="modal-levels" class="modal-backdrop modal-hidden fixed inset-0 z-50 bg-slate-950/55 backdrop-blur-sm flex items-center justify-center p-3 sm:p-4">
     <div class="modal-card glass-panel rounded-3xl w-full max-w-md max-h-[88vh] flex flex-col p-4 sm:p-6">
       <div class="flex items-center justify-between mb-3 shrink-0">
         <div class="min-w-0">
@@ -623,7 +632,7 @@
   </div>
 
   <!-- Main Menu Overlay -->
-  <div id="modal-menu" class="modal-backdrop modal-hidden fixed inset-0 z-30 bg-slate-950/60 backdrop-blur-sm flex items-center justify-center p-4">
+  <div id="modal-menu" class="modal-backdrop modal-hidden fixed inset-0 z-30 bg-slate-950/40 backdrop-blur-sm flex items-center justify-center p-4">
     <div class="modal-card glass-panel rounded-3xl w-full max-w-sm max-h-[88vh] overflow-y-auto p-6 text-center">
       <h1 class="voxel-wordmark mb-5" data-voxel-wordmark>
         <span class="sr-only">Crate Expectations</span>
@@ -694,7 +703,7 @@
   </div>
 
   <!-- Settings Modal -->
-  <div id="modal-settings" class="modal-backdrop modal-hidden fixed inset-0 z-[60] bg-slate-950/75 backdrop-blur-sm flex items-center justify-center p-4">
+  <div id="modal-settings" class="modal-backdrop modal-hidden fixed inset-0 z-[60] bg-slate-950/55 backdrop-blur-sm flex items-center justify-center p-4">
     <div class="modal-card glass-panel rounded-3xl w-full max-w-sm max-h-[88vh] overflow-y-auto p-6">
       <div class="flex items-center justify-between mb-5">
         <h2 class="text-xl font-extrabold text-white">Settings</h2>
@@ -703,11 +712,21 @@
         </button>
       </div>
 
-      <div class="space-y-4">
+      <div class="space-y-3.5">
+        <div class="flex items-center justify-between bg-slate-900/60 rounded-2xl px-4 py-3 border border-slate-700/60">
+          <div>
+            <div class="text-sm font-bold text-white">Background Music</div>
+            <div class="text-xs text-slate-400">Chill lo-fi puzzle soundtrack</div>
+          </div>
+          <button id="toggle-music" class="toggle-track on" role="switch" aria-checked="true" aria-label="Background Music">
+            <div class="toggle-thumb"></div>
+          </button>
+        </div>
+
         <div class="flex items-center justify-between bg-slate-900/60 rounded-2xl px-4 py-3 border border-slate-700/60">
           <div>
             <div class="text-sm font-bold text-white">Sound Effects</div>
-            <div class="text-xs text-slate-400">Procedural voxel audio</div>
+            <div class="text-xs text-slate-400">Voxel footsteps &amp; chimes</div>
           </div>
           <button id="toggle-sound" class="toggle-track on" role="switch" aria-checked="true" aria-label="Sound Effects">
             <div class="toggle-thumb"></div>
@@ -751,7 +770,7 @@
   </div>
 
   <!-- Cosmetic Shop Modal -->
-  <div id="modal-shop" class="modal-backdrop modal-hidden fixed inset-0 z-50 bg-slate-950/75 backdrop-blur-sm flex items-center justify-center p-4">
+  <div id="modal-shop" class="modal-backdrop modal-hidden fixed inset-0 z-50 bg-slate-950/55 backdrop-blur-sm flex items-center justify-center p-4">
     <div class="modal-card glass-panel rounded-3xl w-full max-w-md max-h-[88vh] flex flex-col p-5 sm:p-6">
       <div class="flex items-center justify-between mb-3">
         <div class="flex items-center gap-2.5">
@@ -785,7 +804,7 @@
   </div>
 
   <!-- Level Complete Victory Modal -->
-  <div id="modal-win" class="modal-backdrop modal-hidden fixed inset-0 z-40 bg-slate-950/70 backdrop-blur-sm flex items-center justify-center p-4">
+  <div id="modal-win" class="modal-backdrop modal-hidden fixed inset-0 z-40 bg-slate-950/45 backdrop-blur-sm flex items-center justify-center p-4">
     <div class="modal-card glass-panel rounded-3xl w-full max-w-sm max-h-[88vh] overflow-y-auto p-6 text-center">
       <div id="win-stars" class="flex items-center justify-center gap-2 mb-3"></div>
       <h2 id="win-title" class="text-2xl font-extrabold text-white mb-1">Level Cleared!</h2>
@@ -816,6 +835,7 @@
       <button id="btn-win-double" class="hidden game-btn game-btn-gold rounded-2xl w-full py-2.5 font-extrabold text-sm mb-3">
         2× Coins • Watch Ad
       </button>
+      <div id="win-ad-status" class="hidden text-xs font-medium text-amber-300 mb-3 -mt-1.5"></div>
 
       <div id="win-trial-msg" class="hidden mb-3 rounded-xl bg-sky-500/15 border border-sky-400/30 px-3 py-2 text-xs text-sky-200 flex items-center justify-between gap-2 text-left">
         <span id="win-trial-text"></span>
@@ -868,22 +888,22 @@
   </div>
 
   <!-- Application Modules (Loaded in dependency order) -->
-  <script src="js/config.js?v=20261122-9"></script>
-  <script src="js/levels-data.js?v=20261122-9"></script>
-  <script src="js/levels.js?v=20261122-9"></script>
-  <script src="js/storage.js?v=20261122-12"></script>
-  <script src="js/audio.js?v=20261122-9"></script>
-  <script src="js/cosmetics.js?v=20261122-9"></script>
-  <script src="js/voxels.js?v=20261122-9"></script>
-  <script src="js/renderer.js?v=20261122-9"></script>
-  <script src="js/platform.js?v=20261122-12"></script>
-  <script src="js/adapters/mock-adapter.js?v=20261122-12"></script>
-  <script src="js/adapters/crazygames-adapter.js?v=20261122-12"></script>
-  <script src="js/monetization.js?v=20261122-9"></script>
-  <script src="js/game.js?v=20261122-9"></script>
-  <script src="js/intro.js?v=20261122-9"></script>
-  <script src="js/ui.js?v=20261122-12"></script>
-  <script src="js/input.js?v=20261122-11"></script>
-  <script src="js/main.js?v=20261122-12"></script>
+  <script src="js/config.js?v=20261126-2"></script>
+  <script src="js/levels-data.js?v=20261126-2"></script>
+  <script src="js/levels.js?v=20261126-2"></script>
+  <script src="js/storage.js?v=20261126-2"></script>
+  <script src="js/audio.js?v=20261126-2"></script>
+  <script src="js/cosmetics.js?v=20261126-2"></script>
+  <script src="js/voxels.js?v=20261126-2"></script>
+  <script src="js/renderer.js?v=20261126-2"></script>
+  <script src="js/platform.js?v=20261126-2"></script>
+  <script src="js/adapters/mock-adapter.js?v=20261126-2"></script>
+  <script src="js/adapters/crazygames-adapter.js?v=20261126-2"></script>
+  <script src="js/monetization.js?v=20261126-2"></script>
+  <script src="js/game.js?v=20261126-2"></script>
+  <script src="js/intro.js?v=20261126-2"></script>
+  <script src="js/ui.js?v=20261126-2"></script>
+  <script src="js/input.js?v=20261126-2"></script>
+  <script src="js/main.js?v=20261126-2"></script>
 </body>
 </html>

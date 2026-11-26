@@ -42,13 +42,31 @@
     return isLocalOrFileHost();
   }
 
+  function hasCrazyGamesAncestor() {
+    try {
+      const origins = global.location && global.location.ancestorOrigins;
+      if (origins && origins.length) {
+        for (let i = 0; i < origins.length; i++) {
+          if (CRAZYGAMES_HOST_RE.test(String(origins[i] || ''))) {
+            return true;
+          }
+        }
+      }
+    } catch (e) {}
+    return false;
+  }
+
   function isCrazyGamesEnvironment() {
     const params = getSearchParams();
     if (params) {
       const p = params.get('platform') || params.get('adapter');
       if (p === 'crazygames') return true;
+      if (params.get('useLocalSdk') === 'true') return true;
     }
     if (global.location && CRAZYGAMES_HOST_RE.test(String(global.location.hostname || ''))) {
+      return true;
+    }
+    if (hasCrazyGamesAncestor()) {
       return true;
     }
     try {
@@ -56,17 +74,19 @@
         !isLocalOrFileHost() &&
         global.document &&
         typeof global.document.referrer === 'string' &&
-        /crazygames\./i.test(global.document.referrer)
+        CRAZYGAMES_HOST_RE.test(global.document.referrer)
       ) {
         return true;
       }
     } catch (e) {}
-    if (
-      global.CrazyGames &&
-      global.CrazyGames.SDK &&
-      global.CrazyGames.SDK.environment === 'crazygames'
-    ) {
-      return true;
+    if (global.CrazyGames && global.CrazyGames.SDK) {
+      const env = global.CrazyGames.SDK.environment;
+      if (env === 'crazygames' || env === 'local') {
+        return true;
+      }
+      if (!isLocalOrFileHost() && env !== 'disabled') {
+        return true;
+      }
     }
     return false;
   }

@@ -75,15 +75,17 @@
       }
 
       if (primaryBtn) {
-        primaryBtn.textContent = config.primaryLabel;
-        primaryBtn.className = config.primaryClass;
+        primaryBtn.textContent = config.primaryLabel || '';
+        primaryBtn.className = config.primaryClass || 'game-btn game-btn-emerald rounded-2xl flex-1 py-3 font-extrabold text-sm';
         primaryBtn.disabled = Boolean(config.primaryDelayMs);
         primaryBtn.classList.toggle('hidden', !config.primaryLabel);
+        primaryBtn.style.display = config.primaryLabel ? '' : 'none';
       }
       if (secondaryBtn) {
         secondaryBtn.textContent = config.secondaryLabel || '';
         secondaryBtn.className = config.secondaryClass || 'game-btn rounded-2xl flex-1 py-3 font-bold text-sm text-slate-200';
         secondaryBtn.classList.toggle('hidden', !config.secondaryLabel);
+        secondaryBtn.style.display = config.secondaryLabel ? '' : 'none';
       }
 
       const finish = (result) => {

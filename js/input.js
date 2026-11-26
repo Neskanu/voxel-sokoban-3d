@@ -124,6 +124,130 @@
   }
 
   const PREVENT_SCROLL_KEYS = new Set([' ', 'ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight']);
+  const MENU_MODAL_ORDER = ['modal-settings', 'modal-levels', 'modal-shop', 'modal-win', 'modal-menu'];
+  let winMenuNavigated = false;
+
+  function getActiveMenuModalId() {
+    if (!VS.UI || (VS.Monetization && VS.Monetization.isAdActive()) || VS.UI.isModalOpen('modal-ad')) {
+      return null;
+    }
+    for (let i = 0; i < MENU_MODAL_ORDER.length; i++) {
+      const id = MENU_MODAL_ORDER[i];
+      if (VS.UI.isModalOpen(id)) return id;
+    }
+    if (VS.Game && VS.Game.state && VS.Game.state.menuOpen) {
+      return 'modal-menu';
+    }
+    return null;
+  }
+
+  function getFocusableMenuItems(modalId) {
+    const modal = byId(modalId);
+    if (!modal) return [];
+    const nodes = modal.querySelectorAll('button, [role="switch"]');
+    const list = [];
+    for (let i = 0; i < nodes.length; i++) {
+      const el = nodes[i];
+      if (!el || el.disabled || (el.classList && el.classList.contains('hidden'))) continue;
+      if (el.offsetParent === null && typeof el.getBoundingClientRect !== 'function') continue;
+      if (el.offsetParent === null && (!el.getBoundingClientRect || (el.getBoundingClientRect().width === 0 && el.getBoundingClientRect().height === 0))) {
+        continue;
+      }
+      list.push(el);
+    }
+    return list;
+  }
+
+  function getCenter(el) {
+    if (el && typeof el.getBoundingClientRect === 'function') {
+      const r = el.getBoundingClientRect();
+      return { x: r.left + r.width / 2, y: r.top + r.height / 2, valid: r.width > 0 || r.height > 0 };
+    }
+    return { x: 0, y: 0, valid: false };
+  }
+
+  function moveMenuFocus(modalId, dir) {
+    const items = getFocusableMenuItems(modalId);
+    if (!items.length) return null;
+
+    if (modalId === 'modal-win') {
+      winMenuNavigated = true;
+    }
+
+    const doc = global.document;
+    const activeEl = doc ? doc.activeElement : null;
+    let curIdx = items.indexOf(activeEl);
+    let target = null;
+
+    if (curIdx === -1 && modalId === 'modal-win') {
+      const doubleBtn = byId('btn-win-double');
+      const nextBtn = byId('btn-win-next');
+      const anchorBtn =
+        doubleBtn && !doubleBtn.classList.contains('hidden') && !doubleBtn.disabled ? doubleBtn : nextBtn;
+      const anchorIdx = anchorBtn ? items.indexOf(anchorBtn) : -1;
+      if (anchorIdx !== -1) {
+        curIdx = anchorIdx;
+      }
+    }
+
+    if (curIdx === -1) {
+      if (modalId === 'modal-menu') {
+        target = byId('btn-menu-play');
+      }
+      if (!target || items.indexOf(target) === -1) {
+        target = items[0];
+      }
+    } else {
+      const curCenter = getCenter(items[curIdx]);
+      if (curCenter.valid) {
+        let bestScore = Infinity;
+        for (let i = 0; i < items.length; i++) {
+          if (i === curIdx) continue;
+          const c = getCenter(items[i]);
+          if (!c.valid) continue;
+          const dx = c.x - curCenter.x;
+          const dy = c.y - curCenter.y;
+          let primary = -1;
+          let secondary = 0;
+          if (dir === 'up' && dy < -4) {
+            primary = -dy;
+            secondary = Math.abs(dx);
+          } else if (dir === 'down' && dy > 4) {
+            primary = dy;
+            secondary = Math.abs(dx);
+          } else if (dir === 'left' && dx < -4) {
+            primary = -dx;
+            secondary = Math.abs(dy);
+          } else if (dir === 'right' && dx > 4) {
+            primary = dx;
+            secondary = Math.abs(dy);
+          }
+          if (primary > 0) {
+            const score = primary + secondary * 2.5;
+            if (score < bestScore) {
+              bestScore = score;
+              target = items[i];
+            }
+          }
+        }
+      }
+      if (!target) {
+        const step = dir === 'up' || dir === 'left' ? -1 : 1;
+        target = items[(curIdx + step + items.length) % items.length];
+      }
+    }
+
+    if (target && typeof target.focus === 'function') {
+      target.focus();
+      if (typeof target.scrollIntoView === 'function') {
+        target.scrollIntoView({ block: 'nearest' });
+      }
+      if (VS.Sound && typeof VS.Sound.playClick === 'function') {
+        VS.Sound.playClick();
+      }
+    }
+    return target;
+  }
 
   function setupKeyboardControls() {
     global.addEventListener('keydown', (e) => {
@@ -150,19 +274,113 @@
         !VS.UI.isModalOpen('modal-shop') &&
         !(VS.Monetization && VS.Monetization.isAdActive())
       ) {
+        if (winMenuNavigated) {
+          const items = getFocusableMenuItems('modal-win');
+          const activeEl = global.document ? global.document.activeElement : null;
+          if (activeEl && items.indexOf(activeEl) !== -1) {
+            e.preventDefault();
+            winMenuNavigated = false;
+            activeEl.click();
+            return;
+          }
+        }
         const doubleBtn = byId('btn-win-double');
+        const nextBtn = byId('btn-win-next');
         if (doubleBtn && !doubleBtn.classList.contains('hidden') && !doubleBtn.disabled) {
           e.preventDefault();
           doubleBtn.click();
+        } else if (nextBtn && !nextBtn.classList.contains('hidden') && !nextBtn.disabled) {
+          e.preventDefault();
+          nextBtn.click();
         }
         return;
       }
 
-      if (isEditableTarget(e.target) || VS.Game.state.menuOpen || VS.UI.isAnyModalOpen()) {
+      if (isEditableTarget(e.target)) {
         return;
       }
 
       const key = e.key.toLowerCase();
+      const activeMenuId = getActiveMenuModalId();
+      if (activeMenuId !== 'modal-win') {
+        winMenuNavigated = false;
+      }
+
+      if (activeMenuId) {
+        if (key === 'escape' && !e.repeat) {
+          e.preventDefault();
+          if (activeMenuId === 'modal-menu') {
+            VS.UI.closeMainMenu();
+          } else if (activeMenuId === 'modal-win') {
+            winMenuNavigated = false;
+            VS.UI.hideModal('modal-win');
+          } else {
+            VS.UI.closeTopModal();
+          }
+          return;
+        }
+
+        const hasModifier = e.ctrlKey || e.metaKey || e.altKey;
+        if (!hasModifier) {
+          if (key === 'arrowup' || key === 'w') {
+            e.preventDefault();
+            moveMenuFocus(activeMenuId, 'up');
+            return;
+          }
+          if (key === 'arrowdown' || key === 's') {
+            e.preventDefault();
+            moveMenuFocus(activeMenuId, 'down');
+            return;
+          }
+          if (key === 'arrowleft' || key === 'a') {
+            e.preventDefault();
+            moveMenuFocus(activeMenuId, 'left');
+            return;
+          }
+          if (key === 'arrowright' || key === 'd') {
+            e.preventDefault();
+            moveMenuFocus(activeMenuId, 'right');
+            return;
+          }
+          if ((e.key === ' ' || e.code === 'Space') && !e.repeat) {
+            const items = getFocusableMenuItems(activeMenuId);
+            const activeEl = global.document ? global.document.activeElement : null;
+            if (activeEl && items.indexOf(activeEl) !== -1) {
+              e.preventDefault();
+              if (activeMenuId === 'modal-win') winMenuNavigated = false;
+              activeEl.click();
+            }
+            return;
+          }
+          if (e.key === 'Enter' && !e.repeat && activeMenuId !== 'modal-win') {
+            const items = getFocusableMenuItems(activeMenuId);
+            const activeEl = global.document ? global.document.activeElement : null;
+            if (activeEl && items.indexOf(activeEl) !== -1) {
+              e.preventDefault();
+              activeEl.click();
+            } else if (activeMenuId === 'modal-menu') {
+              const playBtn = byId('btn-menu-play');
+              if (playBtn && !playBtn.disabled) {
+                e.preventDefault();
+                playBtn.click();
+              }
+            }
+            return;
+          }
+        }
+        return;
+      }
+
+      if (VS.Game.state.menuOpen || VS.UI.isAnyModalOpen()) {
+        return;
+      }
+
+      if (key === 'escape' && !e.repeat) {
+        e.preventDefault();
+        VS.UI.openMainMenu();
+        return;
+      }
+
       const hasModifier = e.ctrlKey || e.metaKey || e.altKey;
 
       // Support Ctrl+Z / Cmd+Z for undo while letting all other browser shortcuts (Ctrl+R, Ctrl+W, etc.) pass through
@@ -193,6 +411,8 @@
         VS.Game.undoMove();
       } else if (key === 'r') {
         VS.Game.loadLevel(VS.Game.state.levelIndex);
+      } else if (key === 'h') {
+        VS.Game.requestHint();
       } else if (key === 'q') {
         VS.Game.state.camTargetYaw -= Math.PI / 2;
       } else if (key === 'e') {
@@ -222,6 +442,13 @@
       VS.Game.loadLevel(VS.Game.state.levelIndex);
     });
 
+    const hintBtn = byId('btn-hint');
+    if (hintBtn) {
+      hintBtn.addEventListener('click', () => {
+        VS.Game.requestHint();
+      });
+    }
+
     // --- Top HUD ---
     byId('btn-rotate').addEventListener('click', () => {
       VS.Sound.unlock();
@@ -231,7 +458,10 @@
     byId('btn-sound').addEventListener('click', () => {
       VS.Sound.unlock();
       const s = VS.Storage.getSettings();
-      VS.Storage.updateSetting('sound', !s.sound);
+      const anyOn = Boolean(s.sound || s.music !== false);
+      const next = !anyOn;
+      VS.Storage.updateSetting('sound', next);
+      VS.Storage.updateSetting('music', next);
       VS.UI.applySettings();
     });
 
@@ -257,6 +487,13 @@
     // --- Main Menu ---
     byId('btn-menu-play').addEventListener('click', () => {
       VS.Sound.unlock();
+      if (VS.Game && typeof VS.Game.getNextUncompletedLevelIndex === 'function') {
+        const nextIdx = VS.Game.getNextUncompletedLevelIndex();
+        const st = VS.Game.state;
+        if (st.won || (st.moves === 0 && st.levelIndex !== nextIdx)) {
+          VS.Game.loadLevel(nextIdx);
+        }
+      }
       VS.UI.closeMainMenu();
     });
 
@@ -279,6 +516,16 @@
     byId('btn-close-settings').addEventListener('click', () => {
       VS.UI.closeSettings();
     });
+
+    const musicToggle = byId('toggle-music');
+    if (musicToggle) {
+      musicToggle.addEventListener('click', () => {
+        VS.Sound.unlock();
+        const s = VS.Storage.getSettings();
+        VS.Storage.updateSetting('music', s.music === false);
+        VS.UI.applySettings();
+      });
+    }
 
     byId('toggle-sound').addEventListener('click', () => {
       VS.Sound.unlock();
@@ -347,7 +594,9 @@
         VS.UI.setShopStatus(`+${res.added} Voxel Coins claimed!`, 'text-emerald-300');
       } else if (res.reason === 'cooldown') {
         VS.UI.setShopStatus(`Next free coins ad ready in ${res.remainingSec}s.`, 'text-amber-300');
-      } else if (res.reason === 'no_fill') {
+      } else if (res.reason === 'adblock') {
+        VS.UI.setShopStatus('Ad blocked — disable your ad blocker to claim free coins.', 'text-rose-300');
+      } else if (res.reason === 'no_fill' || res.reason === 'unfilled' || res.reason === 'unavailable') {
         VS.UI.setShopStatus('Ad unavailable right now — try again shortly.', 'text-rose-300');
       } else {
         VS.UI.setShopStatus('Finish the rewarded ad to claim coins.', 'text-amber-300');
@@ -371,7 +620,12 @@
       const baseCoins = VS.UI.getPendingWinDoubleCoins();
       if (!VS.Monetization || !baseCoins) return;
       const btn = byId('btn-win-double');
+      const statusEl = byId('win-ad-status');
       btn.disabled = true;
+      if (statusEl) {
+        statusEl.textContent = '';
+        statusEl.classList.add('hidden');
+      }
       const res = await VS.Monetization.claimWinDoubleCoins(baseCoins);
       if (res.ok) {
         VS.UI.clearPendingWinDoubleCoins();
@@ -380,6 +634,16 @@
         btn.textContent = '2× Coins Claimed ✓';
       } else {
         btn.disabled = false;
+        if (statusEl) {
+          if (res.reason === 'adblock') {
+            statusEl.textContent = 'Ad blocked — disable your ad blocker to claim 2× coins.';
+          } else if (res.reason === 'unfilled' || res.reason === 'no_fill' || res.reason === 'unavailable') {
+            statusEl.textContent = 'Ad unavailable right now — try again shortly.';
+          } else {
+            statusEl.textContent = 'Finish the rewarded ad to double your coins.';
+          }
+          statusEl.classList.remove('hidden');
+        }
       }
     });
 

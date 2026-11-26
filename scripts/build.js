@@ -60,6 +60,12 @@ function main() {
   fs.copyFileSync(path.join(ROOT, 'index.html'), path.join(WEB_DIR, 'index.html'));
   copyTree(path.join(ROOT, 'css'), path.join(WEB_DIR, 'css'));
   copyTree(path.join(ROOT, 'js'), path.join(WEB_DIR, 'js'));
+  if (fs.existsSync(path.join(ROOT, 'vendor'))) {
+    copyTree(path.join(ROOT, 'vendor'), path.join(WEB_DIR, 'vendor'));
+  }
+  if (fs.existsSync(path.join(ROOT, 'assets'))) {
+    copyTree(path.join(ROOT, 'assets'), path.join(WEB_DIR, 'assets'));
+  }
 
   // 3. Create zip package for CrazyGames upload
   if (process.platform === 'win32') {

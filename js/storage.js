@@ -93,10 +93,26 @@
     }
   }
 
+  function isLikelyTouchDevice() {
+    try {
+      if (global.matchMedia && global.matchMedia('(pointer: coarse)').matches) return true;
+      if (global.navigator && global.navigator.maxTouchPoints > 0 && (global.innerWidth || 1200) <= 1024) {
+        return true;
+      }
+    } catch (e) {}
+    return false;
+  }
+
   function loadSaveData() {
     const defaults = {
       levels: {},
-      settings: { sound: true, showDpad: true, autoFollow: true, introSeen: false },
+      settings: {
+        sound: true,
+        music: true,
+        showDpad: isLikelyTouchDevice(),
+        autoFollow: true,
+        introSeen: false
+      },
       economy: createDefaultEconomy()
     };
 

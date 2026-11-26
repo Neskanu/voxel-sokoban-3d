@@ -94,14 +94,20 @@
     const seed = (gx * 37 + gz * 17) % 10;
     const height = 0.92 + (seed % 3) * 0.06;
 
-    group.add(createBox(0.98, height, 0.98, MAT.wallStone, 0, height / 2, 0));
-    group.add(createBox(0.88, 0.1, 0.88, MAT.wallCap, 0, height + 0.04, 0));
+    // Stepped plinth base + stone block + beveled crown cap
+    group.add(createBox(1.0, 0.14, 1.0, MAT.wallDark, 0, 0.07, 0));
+    group.add(createBox(0.95, height - 0.08, 0.95, MAT.wallStone, 0, 0.14 + (height - 0.08) / 2, 0));
+    group.add(createBox(0.86, 0.11, 0.86, MAT.wallCap, 0, height + 0.06, 0));
 
-    if (seed % 2 === 0) {
-      group.add(createBox(0.32, 0.16, 0.32, MAT.wallDark, 0.26, height + 0.08, -0.22));
+    // Corner masonry trim studs for diorama detail
+    if (seed % 3 === 0) {
+      group.add(createBox(0.20, 0.14, 0.20, MAT.wallDark, -0.34, height + 0.09, -0.34));
     }
-    if (seed === 1 || seed === 6) {
-      group.add(createBox(0.28, 0.08, 0.28, MAT.wallMoss, -0.22, height + 0.09, 0.24));
+    if (seed % 2 === 0) {
+      group.add(createBox(0.32, 0.16, 0.32, MAT.wallDark, 0.26, height + 0.09, -0.22));
+    }
+    if (seed === 1 || seed === 6 || seed === 8) {
+      group.add(createBox(0.28, 0.08, 0.28, MAT.wallMoss, -0.22, height + 0.10, 0.24));
     }
     return group;
   }
@@ -155,82 +161,118 @@
     return { group, pad, crystal };
   }
 
-  function addPlayerAccessory(group, accessory) {
+  function addPlayerAccessory(headGroup, torsoGroup, accessory) {
     if (accessory === 'hardhat') {
-      group.add(createBox(0.50, 0.14, 0.48, MAT.playerAccent, 0, 0.91, 0.01));
-      group.add(createBox(0.44, 0.05, 0.16, MAT.playerAccent, 0, 0.85, 0.24));
-      group.add(createBox(0.14, 0.05, 0.36, MAT.playerAccent, 0, 0.99, 0.01));
+      headGroup.add(createBox(0.50, 0.14, 0.48, MAT.playerAccent, 0, 0.39, 0));
+      headGroup.add(createBox(0.44, 0.05, 0.16, MAT.playerAccent, 0, 0.33, 0.23));
+      headGroup.add(createBox(0.14, 0.05, 0.36, MAT.playerAccent, 0, 0.47, 0));
       return;
     }
 
     if (accessory === 'cyberfins') {
       [-0.24, 0.24].forEach((sideX) => {
-        group.add(createBox(0.06, 0.26, 0.18, MAT.playerDark, sideX, 0.78, -0.02));
-        group.add(createBox(0.06, 0.14, 0.10, MAT.playerAccent, sideX, 0.95, -0.05, false, false));
+        headGroup.add(createBox(0.06, 0.26, 0.18, MAT.playerDark, sideX, 0.26, -0.03));
+        headGroup.add(createBox(0.06, 0.14, 0.10, MAT.playerAccent, sideX, 0.43, -0.06, false, false));
       });
-      group.add(createBox(0.28, 0.05, 0.10, MAT.playerAccent, 0, 0.90, 0.05, false, false));
+      headGroup.add(createBox(0.28, 0.05, 0.10, MAT.playerAccent, 0, 0.38, 0.04, false, false));
       return;
     }
 
     if (accessory === 'cryopack') {
       [-0.10, 0.10].forEach((sideX) => {
-        group.add(createBox(0.12, 0.32, 0.12, MAT.playerAccent, sideX, 0.39, -0.25));
-        group.add(createBox(0.08, 0.06, 0.08, MAT.playerDark, sideX, 0.57, -0.25));
+        torsoGroup.add(createBox(0.12, 0.32, 0.12, MAT.playerAccent, sideX, 0.23, -0.25));
+        torsoGroup.add(createBox(0.08, 0.06, 0.08, MAT.playerDark, sideX, 0.41, -0.25));
       });
-      group.add(createBox(0.36, 0.07, 0.16, MAT.playerAccent, 0, 0.90, 0.02));
+      headGroup.add(createBox(0.36, 0.07, 0.16, MAT.playerAccent, 0, 0.38, 0.01));
       return;
     }
 
     if (accessory === 'kabuto') {
-      group.add(createBox(0.48, 0.12, 0.46, MAT.playerDark, 0, 0.91, 0.01));
-      group.add(createBox(0.54, 0.05, 0.44, MAT.playerDark, 0, 0.85, -0.02));
-      group.add(createBox(0.10, 0.10, 0.06, MAT.playerAccent, 0, 0.95, 0.24, false, false));
-      group.add(createBox(0.08, 0.16, 0.06, MAT.playerAccent, -0.11, 1.03, 0.23, false, false));
-      group.add(createBox(0.08, 0.16, 0.06, MAT.playerAccent, 0.11, 1.03, 0.23, false, false));
+      headGroup.add(createBox(0.48, 0.12, 0.46, MAT.playerDark, 0, 0.39, 0));
+      headGroup.add(createBox(0.54, 0.05, 0.44, MAT.playerDark, 0, 0.33, -0.03));
+      headGroup.add(createBox(0.10, 0.10, 0.06, MAT.playerAccent, 0, 0.43, 0.23, false, false));
+      headGroup.add(createBox(0.08, 0.16, 0.06, MAT.playerAccent, -0.11, 0.51, 0.22, false, false));
+      headGroup.add(createBox(0.08, 0.16, 0.06, MAT.playerAccent, 0.11, 0.51, 0.22, false, false));
       return;
     }
 
     if (accessory === 'crown') {
-      group.add(createBox(0.44, 0.09, 0.42, MAT.playerAccent, 0, 0.92, 0.01));
+      headGroup.add(createBox(0.44, 0.09, 0.42, MAT.playerAccent, 0, 0.40, 0));
       [
-        [-0.14, 1.01, 0.16],
-        [0, 1.03, 0.16],
-        [0.14, 1.01, 0.16],
-        [-0.14, 1.01, -0.14],
-        [0.14, 1.01, -0.14]
+        [-0.14, 0.49, 0.15],
+        [0, 0.51, 0.15],
+        [0.14, 0.49, 0.15],
+        [-0.14, 0.49, -0.15],
+        [0.14, 0.49, -0.15]
       ].forEach(([px, py, pz]) => {
-        group.add(createBox(0.08, 0.11, 0.08, MAT.playerAccent, px, py, pz));
+        headGroup.add(createBox(0.08, 0.11, 0.08, MAT.playerAccent, px, py, pz));
       });
       return;
     }
 
     // Default: 'antenna'
-    group.add(createBox(0.05, 0.14, 0.05, MAT.playerDark, 0, 0.94, 0));
-    group.add(createBox(0.10, 0.10, 0.10, MAT.playerAccent, 0, 1.03, 0, false, false));
+    headGroup.add(createBox(0.05, 0.14, 0.05, MAT.playerDark, 0, 0.42, -0.01));
+    headGroup.add(createBox(0.10, 0.10, 0.10, MAT.playerAccent, 0, 0.51, -0.01, false, false));
   }
 
   function buildPlayerVoxel(accessory = 'antenna') {
-    const group = new global.THREE.Group();
+    const THREE = global.THREE;
+    const group = new THREE.Group();
+    const bodyGroup = new THREE.Group();
+    group.add(bodyGroup);
 
-    // Feet
-    group.add(createBox(0.18, 0.16, 0.22, MAT.playerDark, -0.14, 0.08, 0.02));
-    group.add(createBox(0.18, 0.16, 0.22, MAT.playerDark, 0.14, 0.08, 0.02));
+    // Legs (pivoted at hip y = 0.16)
+    const legL = new THREE.Group();
+    legL.position.set(-0.14, 0.16, 0.02);
+    legL.add(createBox(0.18, 0.16, 0.22, MAT.playerDark, 0, -0.08, 0));
+    bodyGroup.add(legL);
 
-    // Torso & arms
-    group.add(createBox(0.46, 0.36, 0.34, MAT.playerBody, 0, 0.34, 0));
-    group.add(createBox(0.12, 0.24, 0.16, MAT.playerDark, -0.28, 0.34, 0.06));
-    group.add(createBox(0.12, 0.24, 0.16, MAT.playerDark, 0.28, 0.34, 0.06));
+    const legR = new THREE.Group();
+    legR.position.set(0.14, 0.16, 0.02);
+    legR.add(createBox(0.18, 0.16, 0.22, MAT.playerDark, 0, -0.08, 0));
+    bodyGroup.add(legR);
 
-    // Backpack
-    group.add(createBox(0.32, 0.26, 0.14, MAT.playerPack, 0, 0.35, -0.22));
+    // Torso pivot (y = 0.16)
+    const torsoPivot = new THREE.Group();
+    torsoPivot.position.set(0, 0.16, 0);
+    bodyGroup.add(torsoPivot);
 
-    // Head, visor & glowing eyes
-    group.add(createBox(0.44, 0.36, 0.42, MAT.playerBody, 0, 0.70, 0.01));
-    group.add(createBox(0.36, 0.16, 0.06, MAT.playerVisor, 0, 0.71, 0.21, false, false));
-    group.add(createBox(0.08, 0.08, 0.04, MAT.playerEye, -0.09, 0.71, 0.23, false, false));
-    group.add(createBox(0.08, 0.08, 0.04, MAT.playerEye, 0.09, 0.71, 0.23, false, false));
+    torsoPivot.add(createBox(0.46, 0.36, 0.34, MAT.playerBody, 0, 0.18, 0));
+    torsoPivot.add(createBox(0.32, 0.26, 0.14, MAT.playerPack, 0, 0.19, -0.22));
 
-    addPlayerAccessory(group, accessory);
+    // Arms (pivoted at shoulders)
+    const armL = new THREE.Group();
+    armL.position.set(-0.28, 0.28, 0.06);
+    armL.add(createBox(0.12, 0.24, 0.16, MAT.playerDark, 0, -0.10, 0));
+    torsoPivot.add(armL);
+
+    const armR = new THREE.Group();
+    armR.position.set(0.28, 0.28, 0.06);
+    armR.add(createBox(0.12, 0.24, 0.16, MAT.playerDark, 0, -0.10, 0));
+    torsoPivot.add(armR);
+
+    // Head pivot (neck y = 0.52 world -> 0.36 above torsoPivot)
+    const headPivot = new THREE.Group();
+    headPivot.position.set(0, 0.36, 0.01);
+    torsoPivot.add(headPivot);
+
+    headPivot.add(createBox(0.44, 0.36, 0.42, MAT.playerBody, 0, 0.18, 0));
+    headPivot.add(createBox(0.36, 0.16, 0.06, MAT.playerVisor, 0, 0.19, 0.20, false, false));
+    headPivot.add(createBox(0.08, 0.08, 0.04, MAT.playerEye, -0.09, 0.19, 0.22, false, false));
+    headPivot.add(createBox(0.08, 0.08, 0.04, MAT.playerEye, 0.09, 0.19, 0.22, false, false));
+
+    addPlayerAccessory(headPivot, torsoPivot, accessory);
+
+    group.userData = group.userData || {};
+    group.userData.rig = {
+      bodyGroup,
+      torsoPivot,
+      headPivot,
+      armL,
+      armR,
+      legL,
+      legR
+    };
 
     return group;
   }

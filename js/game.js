@@ -46,7 +46,10 @@
     camTargetX: 0,
     camTargetZ: 0,
     camAutoFollow: true,
-    particles: []
+    particles: [],
+    deadlockedCrateIds: new Set(),
+    freeHintUsed: false,
+    activeHint: null
   };
 
   function clearWinTimers() {
@@ -56,10 +59,30 @@
     state.winTimers.length = 0;
   }
 
+  function getNextUncompletedLevelIndex() {
+    const all = VS.Levels && VS.Levels.getAll ? VS.Levels.getAll() : [];
+    let lastUnlockedIdx = -1;
+    for (let i = 0; i < all.length; i++) {
+      const lv = all[i];
+      if (!lv || lv.pack === 'custom') continue;
+      if (VS.Storage && typeof VS.Storage.isLevelUnlocked === 'function' && !VS.Storage.isLevelUnlocked(lv)) {
+        continue;
+      }
+      lastUnlockedIdx = i;
+      const rec = VS.Storage && typeof VS.Storage.getLevelRecord === 'function'
+        ? VS.Storage.getLevelRecord(lv.id)
+        : null;
+      if (!rec || !rec.stars) {
+        return i;
+      }
+    }
+    return lastUnlockedIdx >= 0 ? lastUnlockedIdx : 0;
+  }
+
   function init() {
     state.camYaw = CONFIG.CAMERA_ISO_OFFSET;
     state.camTargetYaw = CONFIG.CAMERA_ISO_OFFSET;
-    loadLevel(0);
+    loadLevel(getNextUncompletedLevelIndex());
   }
 
   function loadLevel(index) {
@@ -85,6 +108,9 @@
     state.pushes = 0;
     state.won = false;
     state.isAnimating = false;
+    state.deadlockedCrateIds = new Set();
+    state.freeHintUsed = false;
+    state.activeHint = null;
     state.player.mesh = null;
     state.player.animFrom = null;
     state.player.animTo = null;
@@ -112,6 +138,253 @@
 
     VS.UI.updateHUD();
     VS.UI.hideModal('modal-win');
+    if (VS.UI.updateDeadlockUI) VS.UI.updateDeadlockUI(false);
+    if (VS.UI.updateHintButton) VS.UI.updateHintButton();
+    showOnboardingGuideIfNeeded();
+  }
+
+  function isWallOrOut(x, y) {
+    const key = `${x},${y}`;
+    return state.walls.has(key) || !state.floors.has(key);
+  }
+
+  function isCornerDeadlock(x, y) {
+    if (state.goals.has(`${x},${y}`)) return false;
+    const up = isWallOrOut(x, y - 1);
+    const down = isWallOrOut(x, y + 1);
+    const left = isWallOrOut(x - 1, y);
+    const right = isWallOrOut(x + 1, y);
+    return (up || down) && (left || right);
+  }
+
+  function refreshDeadlocks(triggerSound) {
+    const prevSize = state.deadlockedCrateIds.size;
+    const next = new Set();
+    for (let i = 0; i < state.crates.length; i++) {
+      const c = state.crates[i];
+      if (isCornerDeadlock(c.x, c.y)) {
+        next.add(c.id);
+      }
+    }
+    state.deadlockedCrateIds = next;
+    const hasDeadlock = next.size > 0;
+    if (hasDeadlock && next.size > prevSize && triggerSound && VS.Sound && VS.Sound.playDeadlock) {
+      VS.Sound.playDeadlock();
+    }
+    if (VS.UI && VS.UI.updateDeadlockUI) {
+      VS.UI.updateDeadlockUI(hasDeadlock);
+    }
+    return hasDeadlock;
+  }
+
+  function computeNextOptimalPush(maxStates = 6000) {
+    const dirs = [[0, -1], [0, 1], [-1, 0], [1, 0]];
+    const w = state.gridWidth;
+    const h = state.gridHeight;
+    const idxOf = (x, y) => y * w + x;
+    const isFloorIdx = new Uint8Array(w * h);
+    const isGoalIdx = new Uint8Array(w * h);
+    const isCornerIdx = new Uint8Array(w * h);
+
+    for (let y = 0; y < h; y++) {
+      for (let x = 0; x < w; x++) {
+        const key = `${x},${y}`;
+        const idx = idxOf(x, y);
+        if (state.floors.has(key) && !state.walls.has(key)) {
+          isFloorIdx[idx] = 1;
+        }
+        if (state.goals.has(key)) {
+          isGoalIdx[idx] = 1;
+        }
+        if (isFloorIdx[idx] && !isGoalIdx[idx] && isCornerDeadlock(x, y)) {
+          isCornerIdx[idx] = 1;
+        }
+      }
+    }
+
+    const startCrates = state.crates.map((c) => idxOf(c.x, c.y)).sort((a, b) => a - b);
+    const startPlayer = idxOf(state.player.x, state.player.y);
+
+    function getReachable(pIdx, crateSet) {
+      const visited = new Uint8Array(w * h);
+      const q = [pIdx];
+      visited[pIdx] = 1;
+      let minIdx = pIdx;
+      let head = 0;
+      while (head < q.length) {
+        const cur = q[head++];
+        if (cur < minIdx) minIdx = cur;
+        const cx = cur % w;
+        const cy = (cur / w) | 0;
+        for (let d = 0; d < 4; d++) {
+          const nx = cx + dirs[d][0];
+          const ny = cy + dirs[d][1];
+          if (nx < 0 || ny < 0 || nx >= w || ny >= h) continue;
+          const nIdx = idxOf(nx, ny);
+          if (!visited[nIdx] && isFloorIdx[nIdx] && !crateSet.has(nIdx)) {
+            visited[nIdx] = 1;
+            q.push(nIdx);
+          }
+        }
+      }
+      return { visited, minIdx };
+    }
+
+    const initSet = new Set(startCrates);
+    const initReach = getReachable(startPlayer, initSet);
+    const seen = new Set([`${initReach.minIdx}|${startCrates.join(',')}`]);
+    const queue = [{ crates: startCrates, player: startPlayer, firstPush: null }];
+    let head = 0;
+    let expanded = 0;
+
+    while (head < queue.length && expanded < maxStates) {
+      const node = queue[head++];
+      expanded++;
+      const crateSet = new Set(node.crates);
+      const reach = getReachable(node.player, crateSet);
+
+      for (let i = 0; i < node.crates.length; i++) {
+        const cIdx = node.crates[i];
+        const cx = cIdx % w;
+        const cy = (cIdx / w) | 0;
+
+        for (let d = 0; d < 4; d++) {
+          const dx = dirs[d][0];
+          const dy = dirs[d][1];
+          const px = cx - dx;
+          const py = cy - dy;
+          const tx = cx + dx;
+          const ty = cy + dy;
+          if (px < 0 || py < 0 || px >= w || py >= h || tx < 0 || ty < 0 || tx >= w || ty >= h) continue;
+          const pNeedIdx = idxOf(px, py);
+          const tIdx = idxOf(tx, ty);
+          if (!reach.visited[pNeedIdx]) continue;
+          if (!isFloorIdx[tIdx] || crateSet.has(tIdx) || isCornerIdx[tIdx]) continue;
+
+          const nextCrates = node.crates.slice();
+          nextCrates[i] = tIdx;
+          nextCrates.sort((a, b) => a - b);
+
+          const firstPush = node.firstPush || { crateX: cx, crateY: cy, dx, dy };
+
+          let allOnGoal = true;
+          for (let k = 0; k < nextCrates.length; k++) {
+            if (!isGoalIdx[nextCrates[k]]) {
+              allOnGoal = false;
+              break;
+            }
+          }
+          if (allOnGoal) {
+            return { found: true, push: firstPush, exact: true };
+          }
+
+          const nextSet = new Set(nextCrates);
+          const nextReach = getReachable(cIdx, nextSet);
+          const key = `${nextReach.minIdx}|${nextCrates.join(',')}`;
+          if (!seen.has(key)) {
+            seen.add(key);
+            queue.push({ crates: nextCrates, player: cIdx, firstPush });
+          }
+        }
+      }
+    }
+
+    // Fallback: if bounded out on a huge map, suggest a safe reachable push toward the nearest open goal
+    if (expanded >= maxStates) {
+      let best = null;
+      let bestScore = Infinity;
+      const openGoals = [];
+      state.goals.forEach((gKey) => {
+        const [gx, gy] = gKey.split(',').map(Number);
+        if (!getCrateAt(gx, gy)) openGoals.push({ x: gx, y: gy });
+      });
+      for (let i = 0; i < startCrates.length; i++) {
+        const cIdx = startCrates[i];
+        const cx = cIdx % w;
+        const cy = (cIdx / w) | 0;
+        if (isGoalIdx[cIdx]) continue;
+        for (let d = 0; d < 4; d++) {
+          const dx = dirs[d][0];
+          const dy = dirs[d][1];
+          const px = cx - dx;
+          const py = cy - dy;
+          const tx = cx + dx;
+          const ty = cy + dy;
+          if (px < 0 || py < 0 || px >= w || py >= h || tx < 0 || ty < 0 || tx >= w || ty >= h) continue;
+          const pNeedIdx = idxOf(px, py);
+          const tIdx = idxOf(tx, ty);
+          if (!initReach.visited[pNeedIdx] || !isFloorIdx[tIdx] || initSet.has(tIdx) || isCornerIdx[tIdx]) continue;
+          let minDist = Infinity;
+          for (let g = 0; g < openGoals.length; g++) {
+            const dist = Math.abs(tx - openGoals[g].x) + Math.abs(ty - openGoals[g].y);
+            if (dist < minDist) minDist = dist;
+          }
+          if (minDist < bestScore) {
+            bestScore = minDist;
+            best = { crateX: cx, crateY: cy, dx, dy };
+          }
+        }
+      }
+      if (best) {
+        return { found: true, push: best, exact: false };
+      }
+    }
+
+    return { found: false, push: null, exact: false };
+  }
+
+  function showOnboardingGuideIfNeeded() {
+    if (!VS.Renderer || !VS.Renderer.setGuideArrow) return;
+    if (state.levelIndex === 0 && state.moves === 0 && !state.won) {
+      const res = computeNextOptimalPush(1000);
+      if (res.found && res.push) {
+        VS.Renderer.setGuideArrow(res.push.crateX, res.push.crateY, res.push.dx, res.push.dy, 0x38bdf8);
+      }
+    }
+  }
+
+  async function requestHint() {
+    if (state.won || state.menuOpen || VS.UI.isAnyModalOpen() || (VS.Monetization && VS.Monetization.isAdActive())) {
+      return { ok: false, reason: 'inactive' };
+    }
+    VS.Sound.unlock();
+
+    // Compute first so we never charge an ad if the board is already deadlocked / unsolvable
+    const solved = computeNextOptimalPush(6000);
+    if (!solved.found || !solved.push) {
+      if (VS.Sound && VS.Sound.playDeadlock) VS.Sound.playDeadlock();
+      if (VS.UI && VS.UI.showTransientToast) {
+        VS.UI.showTransientToast('No valid push from here — press Z to Undo or R to Reset!', 'amber');
+      }
+      return { ok: false, reason: 'unsolvable' };
+    }
+
+    const caps = VS.Monetization ? VS.Monetization.getCapabilities() : { rewardedAds: false };
+    if (state.freeHintUsed && caps.rewardedAds && VS.Monetization && VS.Monetization.claimHintWithAd) {
+      const adRes = await VS.Monetization.claimHintWithAd();
+      if (!adRes || !adRes.ok) {
+        if (VS.UI && VS.UI.showTransientToast) {
+          const msg = adRes && adRes.reason === 'adblock'
+            ? 'Ad blocked — disable ad blocker for extra hints.'
+            : 'Hint ad unavailable right now — try again shortly.';
+          VS.UI.showTransientToast(msg, 'amber');
+        }
+        return { ok: false, reason: (adRes && adRes.reason) || 'ad_failed' };
+      }
+    } else {
+      state.freeHintUsed = true;
+    }
+
+    state.activeHint = solved.push;
+    if (VS.Renderer && VS.Renderer.setGuideArrow) {
+      VS.Renderer.setGuideArrow(solved.push.crateX, solved.push.crateY, solved.push.dx, solved.push.dy, 0x34d399);
+    }
+    if (VS.Sound && VS.Sound.playHint) VS.Sound.playHint();
+    if (VS.UI && VS.UI.updateHintButton) VS.UI.updateHintButton();
+    if (VS.UI && VS.UI.showTransientToast) {
+      VS.UI.showTransientToast('Push the glowing crate in the arrow\'s direction!', 'emerald');
+    }
+    return { ok: true, push: solved.push, exact: solved.exact };
   }
 
   function updateCrateVisuals() {
@@ -197,6 +470,9 @@
       state.camAutoFollow = true;
     }
 
+    if (VS.Renderer && VS.Renderer.finishBoardBuildImmediate) {
+      VS.Renderer.finishBoardBuildImmediate();
+    }
     if (state.isAnimating) {
       snapAnimations();
     }
@@ -232,6 +508,7 @@
       crate.x = cx;
       crate.y = cy;
       crate.animTo = VS.Renderer.gridToWorld(cx, cy);
+      crate.pushDir = { x: dx, z: dy };
       crate.animT = 0;
       state.pushes++;
 
@@ -242,6 +519,9 @@
       if (state.goals.has(crateKey)) {
         VS.Sound.playGoalLock();
         VS.Renderer.spawnParticles(destWorld.x, 0.5, destWorld.z, lockColor, 14, 0.09);
+        if (VS.Renderer.spawnGoalShockwave) {
+          VS.Renderer.spawnGoalShockwave(destWorld.x, destWorld.z, lockColor);
+        }
       } else {
         VS.Sound.playPush();
         VS.Renderer.spawnParticles(destWorld.x, 0.15, destWorld.z, pushColor, 5, 0.05);
@@ -249,6 +529,8 @@
     } else {
       pushHistory(null);
       VS.Sound.playStep();
+      const prevWorld = VS.Renderer.gridToWorld(state.player.x, state.player.y);
+      VS.Renderer.spawnParticles(prevWorld.x, 0.08, prevWorld.z, 0x94a3b8, 3, 0.03);
     }
 
     state.player.animFrom = VS.Renderer.gridToWorld(state.player.x, state.player.y);
@@ -265,11 +547,19 @@
       VS.UI.updateHintVisibility();
     }
 
+    if (VS.Renderer && VS.Renderer.clearGuideArrow && (crate || state.levelIndex === 0)) {
+      VS.Renderer.clearGuideArrow();
+      state.activeHint = null;
+    }
+
     const allLocked = updateCrateVisuals();
     VS.UI.updateHUD();
 
     if (allLocked) {
+      refreshDeadlocks(false);
       handleLevelWin();
+    } else if (crate) {
+      refreshDeadlocks(true);
     }
   }
 
@@ -279,6 +569,9 @@
 
     if (VS.Storage.getSettings().autoFollow) {
       state.camAutoFollow = true;
+    }
+    if (VS.Renderer && VS.Renderer.finishBoardBuildImmediate) {
+      VS.Renderer.finishBoardBuildImmediate();
     }
     snapAnimations();
 
@@ -303,8 +596,11 @@
 
     state.moves = Math.max(0, state.moves - 1);
     state.isAnimating = true;
+    state.activeHint = null;
+    if (VS.Renderer && VS.Renderer.clearGuideArrow) VS.Renderer.clearGuideArrow();
     VS.Sound.playUndo();
     updateCrateVisuals();
+    refreshDeadlocks(false);
     VS.UI.updateHUD();
   }
 
@@ -368,7 +664,7 @@
         newlyUnlockedCount: newlyUnlocked.length,
         newlyUnlockedPacks
       });
-    }, 420);
+    }, 1550);
     state.winTimers.push(modalTimerId);
   }
 
@@ -398,6 +694,11 @@
     undoMove,
     snapAnimations,
     clearWinTimers,
-    handleTapTile
+    handleTapTile,
+    getNextUncompletedLevelIndex,
+    isCornerDeadlock,
+    computeNextOptimalPush,
+    requestHint,
+    showOnboardingGuideIfNeeded
   };
 })(window);

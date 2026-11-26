@@ -25,6 +25,9 @@
   let resetConfirmArmed = false;
   let resetConfirmTimer = null;
   let hintHideTimer = null;
+  let transientToastTimer = null;
+  let isDeadlockToastActive = false;
+  let winStarTimers = [];
   let shopCooldownTimer = null;
   let pendingWinDoubleCoins = 0;
   let lastWinNextLockInfo = null;
@@ -42,9 +45,19 @@
     if (VS.Platform) VS.Platform.gameplayStop();
   }
 
+  function clearWinStarTimers() {
+    for (let i = 0; i < winStarTimers.length; i++) {
+      global.clearTimeout(winStarTimers[i]);
+    }
+    winStarTimers.length = 0;
+  }
+
   function hideModal(id) {
     const el = byId(id);
     if (el) el.classList.add('modal-hidden');
+    if (id === 'modal-win') {
+      clearWinStarTimers();
+    }
     if (id === 'modal-settings') {
       disarmResetProgress();
     }
@@ -115,6 +128,10 @@
 
   function closeMainMenu() {
     VS.Game.state.menuOpen = false;
+    const baseYaw = VS.CONFIG.CAMERA_ISO_OFFSET;
+    const twoPi = Math.PI * 2;
+    const currentYaw = VS.Game.state.camYaw;
+    VS.Game.state.camTargetYaw = baseYaw + Math.round((currentYaw - baseYaw) / twoPi) * twoPi;
     hideModal('modal-menu');
     updateHintVisibility();
     if (VS.Platform && !isAnyModalOpen()) {
@@ -141,11 +158,17 @@
 
   function applySettings() {
     const s = VS.Storage.getSettings();
+    const musicOn = s.music !== false;
     VS.Sound.setEnabled(s.sound);
-    byId('icon-sound-on').classList.toggle('hidden', !s.sound);
-    byId('icon-sound-off').classList.toggle('hidden', s.sound);
+    if (VS.Sound.setMusicEnabled) {
+      VS.Sound.setMusicEnabled(musicOn);
+    }
+    const anyAudio = Boolean(s.sound || musicOn);
+    byId('icon-sound-on').classList.toggle('hidden', !anyAudio);
+    byId('icon-sound-off').classList.toggle('hidden', anyAudio);
     byId('dpad-container').classList.toggle('hidden', !s.showDpad);
 
+    syncToggle('toggle-music', musicOn);
     syncToggle('toggle-sound', s.sound);
     syncToggle('toggle-dpad', s.showDpad);
     syncToggle('toggle-autofollow', s.autoFollow);
@@ -225,9 +248,72 @@
     if (byId('tab-premium')) byId('tab-premium').textContent = `★ Packs (${premiumCount})`;
   }
 
+  function showTransientToast(message, tone = 'sky', durationMs = 3600) {
+    const toast = byId('toast-hint');
+    const dot = byId('toast-hint-dot');
+    const text = byId('toast-hint-text');
+    if (!toast || !text) return;
+
+    if (hintHideTimer) {
+      global.clearTimeout(hintHideTimer);
+      hintHideTimer = null;
+    }
+    if (transientToastTimer) {
+      global.clearTimeout(transientToastTimer);
+      transientToastTimer = null;
+    }
+
+    const dotColors = {
+      sky: 'bg-sky-400',
+      amber: 'bg-amber-400',
+      emerald: 'bg-emerald-400',
+      rose: 'bg-rose-400'
+    };
+    if (dot) {
+      dot.className = `w-2 h-2 shrink-0 rounded-full ${dotColors[tone] || 'bg-sky-400'} animate-pulse`;
+    }
+    text.textContent = message;
+    toast.classList.remove('hidden');
+    toast.classList.remove('opacity-0');
+
+    if (durationMs > 0) {
+      transientToastTimer = global.setTimeout(() => {
+        transientToastTimer = null;
+        if (!isDeadlockToastActive) {
+          toast.classList.add('opacity-0');
+        }
+      }, durationMs);
+    }
+  }
+
+  function updateDeadlockUI(hasDeadlock) {
+    const undoBtn = byId('btn-undo');
+    if (undoBtn) {
+      undoBtn.classList.toggle('btn-deadlock-pulse', Boolean(hasDeadlock));
+    }
+    isDeadlockToastActive = Boolean(hasDeadlock);
+    if (hasDeadlock) {
+      showTransientToast('Crate stuck in corner! Press Z to Undo', 'amber', 0);
+    } else if (!transientToastTimer) {
+      updateHintVisibility();
+    }
+  }
+
+  function updateHintButton() {
+    const badge = byId('btn-hint-badge');
+    if (!badge || !VS.Game) return;
+    const caps = VS.Monetization ? VS.Monetization.getCapabilities() : { rewardedAds: false };
+    const useAd = Boolean(VS.Game.state.freeHintUsed && caps.rewardedAds);
+    badge.textContent = useAd ? 'Ad' : 'Free';
+    badge.className = useAd
+      ? 'mono text-[10px] font-extrabold px-1.5 py-0.5 rounded-full bg-amber-500/20 text-amber-300 border border-amber-400/35'
+      : 'mono text-[10px] font-extrabold px-1.5 py-0.5 rounded-full bg-sky-500/20 text-sky-300 border border-sky-400/35';
+  }
+
   function updateHintVisibility() {
     const toast = byId('toast-hint');
     if (!toast) return;
+    if (isDeadlockToastActive) return;
 
     const state = VS.Game.state;
     const shouldShow = !state.menuOpen && !state.hintDismissed;
@@ -238,13 +324,20 @@
     }
 
     if (shouldShow) {
+      const dot = byId('toast-hint-dot');
+      const text = byId('toast-hint-text');
+      if (dot) dot.className = 'w-2 h-2 shrink-0 rounded-full bg-sky-400 animate-pulse';
+      if (text) {
+        text.innerHTML =
+          'Use <span class="kbd-pill">W</span><span class="kbd-pill">A</span><span class="kbd-pill">S</span><span class="kbd-pill">D</span> or Arrows to push crates onto glowing goals';
+      }
       toast.classList.remove('hidden');
       toast.classList.remove('opacity-0');
     } else {
       toast.classList.add('opacity-0');
       if (state.hintDismissed) {
         hintHideTimer = global.setTimeout(() => {
-          if (VS.Game.state.hintDismissed) {
+          if (VS.Game.state.hintDismissed && !isDeadlockToastActive && !transientToastTimer) {
             toast.classList.add('hidden');
           }
         }, 500);
@@ -256,6 +349,68 @@
     return `<svg class="${sizeClass} ${filled ? 'star-filled' : 'star-empty'}" viewBox="0 0 24 24" fill="currentColor">
       <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/>
     </svg>`;
+  }
+
+  const WIN_STAR_POINTS = [
+    [12, 2],
+    [15.09, 8.26],
+    [22, 9.27],
+    [17, 14.14],
+    [18.18, 21.02],
+    [12, 17.77],
+    [5.82, 21.02],
+    [7, 14.14],
+    [2, 9.27],
+    [8.91, 8.26]
+  ];
+  const winStarUrlCache = { filled: null, empty: null };
+
+  function getWinStarDataUrl(filled) {
+    const key = filled ? 'filled' : 'empty';
+    if (winStarUrlCache[key]) return winStarUrlCache[key];
+    try {
+      const doc = global.document;
+      if (!doc || typeof doc.createElement !== 'function') return null;
+      const canvas = doc.createElement('canvas');
+      canvas.width = 160;
+      canvas.height = 160;
+      const ctx = canvas.getContext && canvas.getContext('2d');
+      if (!ctx) return null;
+
+      const pad = 16;
+      const scale = (160 - pad * 2) / 24;
+      ctx.beginPath();
+      for (let i = 0; i < WIN_STAR_POINTS.length; i++) {
+        const px = pad + WIN_STAR_POINTS[i][0] * scale;
+        const py = pad + WIN_STAR_POINTS[i][1] * scale;
+        if (i === 0) ctx.moveTo(px, py);
+        else ctx.lineTo(px, py);
+      }
+      ctx.closePath();
+
+      if (filled) {
+        ctx.shadowColor = 'rgba(251, 191, 36, 0.55)';
+        ctx.shadowBlur = 18;
+        ctx.fillStyle = '#fbbf24';
+      } else {
+        ctx.fillStyle = 'rgba(148, 163, 184, 0.3)';
+      }
+      ctx.fill();
+
+      const url = canvas.toDataURL('image/png');
+      winStarUrlCache[key] = url;
+      return url;
+    } catch (e) {
+      return null;
+    }
+  }
+
+  function renderWinStarMarkup(filled, extraClass = '') {
+    const url = getWinStarDataUrl(filled);
+    if (!url) {
+      return renderStarSVG(filled, `w-10 h-10 ${extraClass}`.trim());
+    }
+    return `<img src="${url}" class="w-10 h-10 win-star-img ${extraClass}" alt="" draggable="false" />`;
   }
 
   function setActivePackTab(tab) {
@@ -841,7 +996,47 @@
   }
 
   function showWinModal(data) {
-    byId('win-stars').innerHTML = [1, 2, 3].map((n) => renderStarSVG(n <= data.stars, 'w-10 h-10')).join('');
+    clearWinStarTimers();
+    const starsHost = byId('win-stars');
+    if (starsHost) {
+      starsHost.innerHTML = [1, 2, 3]
+        .map(
+          (n) =>
+            `<span class="win-star-slot" data-star-slot="${n}">${renderWinStarMarkup(false)}</span>`
+        )
+        .join('');
+
+      const earnedCount = Math.max(0, Math.min(3, Number(data.stars) || 0));
+      for (let n = 1; n <= earnedCount; n++) {
+        const delayMs = 140 + (n - 1) * 230;
+        const tid = global.setTimeout(() => {
+          const slot = starsHost.querySelector(`[data-star-slot="${n}"]`);
+          if (!slot) return;
+          let burstHtml = '<span class="win-star-ring"></span>';
+          for (let s = 0; s < 6; s++) {
+            const angle = (s / 6) * Math.PI * 2 - Math.PI / 6;
+            const dist = 24 + (s % 2) * 8;
+            const sx = (Math.cos(angle) * dist).toFixed(1);
+            const sy = (Math.sin(angle) * dist).toFixed(1);
+            burstHtml += `<span class="win-star-spark" style="--sx:${sx}px;--sy:${sy}px"></span>`;
+          }
+          slot.classList.add('win-star-has-glow');
+          slot.innerHTML = `${renderWinStarMarkup(true, 'win-star-pop')}${burstHtml}`;
+          if (VS.Sound && typeof VS.Sound.playStarPop === 'function') {
+            VS.Sound.playStarPop(n);
+          }
+          if (n === 3) {
+            const perfectTid = global.setTimeout(() => {
+              starsHost.querySelectorAll('.win-star-slot').forEach((el) => {
+                el.classList.add('win-star-perfect');
+              });
+            }, 520);
+            winStarTimers.push(perfectTid);
+          }
+        }, delayMs);
+        winStarTimers.push(tid);
+      }
+    }
     byId('win-title').textContent =
       data.stars === 3 ? 'Perfect Clear!' : (data.isLast ? 'All Levels Cleared!' : 'Level Cleared!');
     byId('win-subtitle').textContent = `"${data.level.name}" — ${data.stars} of 3 Stars`;
@@ -872,6 +1067,11 @@
       doubleBtn.classList.toggle('hidden', !canDouble);
       doubleBtn.disabled = false;
       doubleBtn.textContent = `+${baseCoinsEarned} Coins (2× Watch Ad)`;
+    }
+    const winAdStatus = byId('win-ad-status');
+    if (winAdStatus) {
+      winAdStatus.textContent = '';
+      winAdStatus.classList.add('hidden');
     }
 
     const trialMsg = byId('win-trial-msg');
@@ -1031,6 +1231,9 @@
     refreshEconomyUI,
     updatePackTabCounts,
     updateHintVisibility,
+    showTransientToast,
+    updateDeadlockUI,
+    updateHintButton,
     renderStarSVG,
     setActivePackTab,
     setActivePremiumPack,

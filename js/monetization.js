@@ -250,6 +250,19 @@
     return { ok: true, added: CONFIG.COIN_REWARDED_SHOP_GRANT };
   }
 
+  async function claimHintWithAd() {
+    if (adActive) return { ok: false, reason: 'busy' };
+    if (!getCapabilities().rewardedAds) return { ok: false, reason: 'unavailable' };
+
+    const res = await withAdLifecycle(() => VS.Platform.showRewardedAd('level_hint'));
+    if (!res || !res.rewarded) {
+      return { ok: false, reason: (res && res.reason) || 'cancelled' };
+    }
+
+    lastRewardedAt = Date.now();
+    return { ok: true };
+  }
+
   async function unlockLevelWithAd(levelId) {
     if (adActive) return { ok: false, reason: 'busy' };
     if (!levelId) return { ok: false, reason: 'invalid' };
@@ -275,16 +288,21 @@
     if (!getCapabilities().interstitialAds) {
       return { show: false, reason: 'unsupported' };
     }
-    if (VS.Storage && VS.Storage.getTotalClears() <= CONFIG.INTERSTITIAL_GRACE_CLEARS) {
+    const isCG = Boolean(VS.Platform && typeof VS.Platform.isCrazyGamesMode === 'function' && VS.Platform.isCrazyGamesMode());
+    const graceClears = isCG ? CONFIG.CG_INTERSTITIAL_GRACE_CLEARS : CONFIG.INTERSTITIAL_GRACE_CLEARS;
+    const levelInterval = isCG ? CONFIG.CG_INTERSTITIAL_LEVEL_INTERVAL : CONFIG.INTERSTITIAL_LEVEL_INTERVAL;
+    const cooldownSec = isCG ? CONFIG.CG_INTERSTITIAL_COOLDOWN_SEC : CONFIG.INTERSTITIAL_COOLDOWN_SEC;
+
+    if (VS.Storage && VS.Storage.getTotalClears() <= graceClears) {
       return { show: false, reason: 'grace_period' };
     }
-    if (clearsSinceInterstitial < CONFIG.INTERSTITIAL_LEVEL_INTERVAL) {
+    if (clearsSinceInterstitial < levelInterval) {
       return { show: false, reason: 'interval' };
     }
-    if (lastInterstitialAt > 0 && (nowMs - lastInterstitialAt) / 1000 < CONFIG.INTERSTITIAL_COOLDOWN_SEC) {
+    if (cooldownSec > 0 && lastInterstitialAt > 0 && (nowMs - lastInterstitialAt) / 1000 < cooldownSec) {
       return { show: false, reason: 'interstitial_cooldown' };
     }
-    if (lastRewardedAt > 0 && (nowMs - lastRewardedAt) / 1000 < CONFIG.INTERSTITIAL_COOLDOWN_SEC) {
+    if (cooldownSec > 0 && lastRewardedAt > 0 && (nowMs - lastRewardedAt) / 1000 < cooldownSec) {
       return { show: false, reason: 'rewarded_cooldown' };
     }
     return { show: true };
@@ -500,6 +518,7 @@
     claimWinDoubleCoins,
     getShopAdCooldownRemaining,
     claimShopFreeCoins,
+    claimHintWithAd,
     unlockLevelWithAd,
     shouldShowInterstitial,
     maybeShowInterstitial,

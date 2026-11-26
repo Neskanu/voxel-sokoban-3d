@@ -39,6 +39,7 @@
 
     const sdk = getSdk();
     if (!sdkReady || !sdk || !sdk.ad || typeof sdk.ad.requestAd !== 'function') {
+      console.warn(`[CrazyGames] requestAd(${adType}) skipped: SDK unavailable or disabled.`);
       return Promise.resolve(failResult('unavailable'));
     }
 
@@ -62,8 +63,13 @@
         adFinished() {
           finish(successResult());
         },
-        adError(err) {
-          const reason = (err && (err.code || err.message)) || 'ad_error';
+        adError(err, errorData) {
+          console.warn(`[CrazyGames] adError (${adType}):`, err, errorData);
+          const rawReason =
+            (errorData && (errorData.reason || errorData.code)) ||
+            (err && (err.code || err.reason || err.message)) ||
+            (typeof err === 'string' ? err : 'ad_error');
+          const reason = String(rawReason || 'ad_error');
           finish(failResult(reason));
         }
       };
@@ -72,13 +78,15 @@
         const maybePromise = sdk.ad.requestAd(adType, callbacks);
         if (maybePromise && typeof maybePromise.catch === 'function') {
           maybePromise.catch((err) => {
-            const reason = (err && (err.code || err.message)) || 'ad_error';
-            finish(failResult(reason));
+            console.warn(`[CrazyGames] requestAd(${adType}) rejected:`, err);
+            const reason = (err && (err.code || err.reason || err.message)) || 'ad_error';
+            finish(failResult(String(reason)));
           });
         }
       } catch (err) {
-        const reason = (err && (err.code || err.message)) || 'ad_error';
-        finish(failResult(reason));
+        console.warn(`[CrazyGames] requestAd(${adType}) threw:`, err);
+        const reason = (err && (err.code || err.reason || err.message)) || 'ad_error';
+        finish(failResult(String(reason)));
       }
     });
   }
@@ -106,9 +114,15 @@
         if (typeof sdk.init === 'function') {
           await sdk.init();
         }
-        sdkReady = true;
-        bindSettingsListener(sdk);
-        return true;
+        const env = sdk.environment || 'unknown';
+        sdkReady = env !== 'disabled';
+        if (sdkReady) {
+          console.info(`[CrazyGames] SDK initialized (environment=${env}).`);
+          bindSettingsListener(sdk);
+        } else {
+          console.warn('[CrazyGames] SDK environment is "disabled"; ads and data module are inactive.');
+        }
+        return sdkReady;
       } catch (err) {
         console.warn('CrazyGames SDK init failed; continuing with fallback:', err);
         sdkReady = false;
