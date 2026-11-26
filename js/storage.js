@@ -94,6 +94,9 @@
   }
 
   function isLikelyTouchDevice() {
+    if (VS.Platform && typeof VS.Platform.isMobilePlatform === 'function' && VS.Platform.isMobilePlatform()) {
+      return true;
+    }
     try {
       if (global.matchMedia && global.matchMedia('(pointer: coarse)').matches) return true;
       if (global.navigator && global.navigator.maxTouchPoints > 0 && (global.innerWidth || 1200) <= 1024) {
@@ -109,6 +112,7 @@
       settings: {
         sound: true,
         music: true,
+        haptics: true,
         showDpad: isLikelyTouchDevice(),
         autoFollow: true,
         introSeen: false
@@ -190,11 +194,9 @@
     if (saveData.economy.ownedPacks.includes(packId)) return true;
     const iapEnabled = isIapEnabled();
     if (iapEnabled && saveData.economy.isPro) return true;
-    if (!iapEnabled) {
-      const meta = VS.Levels && VS.Levels.getPackMeta ? VS.Levels.getPackMeta(packId) : null;
-      if (meta && meta.unlockStars > 0 && getTotalStars() >= meta.unlockStars) {
-        return true;
-      }
+    const meta = VS.Levels && VS.Levels.getPackMeta ? VS.Levels.getPackMeta(packId) : null;
+    if (meta && meta.unlockStars > 0 && getTotalStars() >= meta.unlockStars) {
+      return true;
     }
     return false;
   }

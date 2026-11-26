@@ -247,6 +247,9 @@
     });
     VS.Game.state.menuOpen = false;
     if (VS.Platform) VS.Platform.gameplayStop();
+    if (VS.UI && typeof VS.UI.syncPlatformBackButton === 'function') {
+      VS.UI.syncPlatformBackButton();
+    }
 
     if (global.document && global.document.body) {
       global.document.body.classList.add('intro-active');
@@ -315,6 +318,9 @@
     VS.Game.loadLevel(restoreLevelIndex);
     if (VS.UI) {
       VS.UI.openMainMenu();
+      if (typeof VS.UI.syncPlatformBackButton === 'function') {
+        VS.UI.syncPlatformBackButton();
+      }
     }
   }
 

@@ -32,17 +32,20 @@
       VS.Renderer.startLoop();
 
       if (VS.Loader) {
-        const minWait = VS.Platform.isCrazyGamesMode() ? 250 : 700;
+        const minWait = VS.Platform.isTelegramMode() ? 250 : 700;
         await VS.Loader.finish(minWait);
       }
       VS.Platform.loadingStop();
 
       const settings = VS.Storage.getSettings();
-      if (VS.Platform.isCrazyGamesMode() || !settings.introSeen) {
+      if (VS.Platform.isTelegramMode() || !settings.introSeen) {
         VS.Storage.updateSetting('introSeen', true);
         VS.UI.closeMainMenu();
       } else {
         VS.UI.openMainMenu();
+      }
+      if (VS.UI && typeof VS.UI.syncPlatformBackButton === 'function') {
+        VS.UI.syncPlatformBackButton();
       }
     } catch (err) {
       console.error('Failed to initialize Crate Expectations:', err);

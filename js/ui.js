@@ -33,16 +33,54 @@
   let lastWinNextLockInfo = null;
   let currentLockAction = null;
 
-  const MODAL_IDS = ['modal-settings', 'modal-levels', 'modal-win', 'modal-shop', 'modal-ad'];
+  const MODAL_IDS = ['modal-settings', 'modal-levels', 'modal-win', 'modal-shop', 'modal-pro', 'modal-ad'];
 
   function byId(id) {
     return global.document.getElementById(id);
+  }
+
+  function syncPlatformBackButton() {
+    if (!VS.Platform || typeof VS.Platform.syncNavigation !== 'function') return;
+    if (VS.Intro && VS.Intro.isActive()) {
+      VS.Platform.syncNavigation(false);
+      return;
+    }
+    const canGoBack = Boolean(
+      isModalOpen('modal-settings') ||
+      isModalOpen('modal-levels') ||
+      isModalOpen('modal-shop') ||
+      isModalOpen('modal-pro') ||
+      isModalOpen('modal-win') ||
+      (VS.Game && VS.Game.state && !VS.Game.state.menuOpen)
+    );
+    VS.Platform.syncNavigation(canGoBack);
+  }
+
+  function handlePlatformBack() {
+    if (VS.Intro && VS.Intro.isActive()) return false;
+    if (isModalOpen('modal-ad') || (VS.Monetization && VS.Monetization.isAdActive())) {
+      return true;
+    }
+    if (closeTopModal()) {
+      return true;
+    }
+    if (isModalOpen('modal-win')) {
+      hideModal('modal-win');
+      openMainMenu();
+      return true;
+    }
+    if (VS.Game && VS.Game.state && !VS.Game.state.menuOpen) {
+      openMainMenu();
+      return true;
+    }
+    return false;
   }
 
   function showModal(id) {
     const el = byId(id);
     if (el) el.classList.remove('modal-hidden');
     if (VS.Platform) VS.Platform.gameplayStop();
+    syncPlatformBackButton();
   }
 
   function clearWinStarTimers() {
@@ -80,6 +118,7 @@
     if (VS.Platform && VS.Game && !VS.Game.state.menuOpen && !isAnyModalOpen() && !(VS.Intro && VS.Intro.isActive())) {
       VS.Platform.gameplayStart();
     }
+    syncPlatformBackButton();
   }
 
   function isModalOpen(id) {
@@ -97,6 +136,10 @@
     }
     if (isModalOpen('modal-settings')) {
       hideModal('modal-settings');
+      return true;
+    }
+    if (isModalOpen('modal-pro')) {
+      hideModal('modal-pro');
       return true;
     }
     if (isModalOpen('modal-shop')) {
@@ -124,6 +167,7 @@
     updateMenuStats();
     refreshEconomyUI();
     showModal('modal-menu');
+    syncPlatformBackButton();
   }
 
   function closeMainMenu() {
@@ -137,6 +181,7 @@
     if (VS.Platform && !isAnyModalOpen()) {
       VS.Platform.gameplayStart();
     }
+    syncPlatformBackButton();
   }
 
   function openSettings() {
@@ -168,10 +213,17 @@
     byId('icon-sound-off').classList.toggle('hidden', anyAudio);
     byId('dpad-container').classList.toggle('hidden', !s.showDpad);
 
+    const hapticsRow = byId('settings-haptics-row');
+    const isTg = Boolean(VS.Platform && typeof VS.Platform.isTelegramMode === 'function' && VS.Platform.isTelegramMode());
+    if (hapticsRow) {
+      hapticsRow.classList.toggle('hidden', !isTg);
+    }
+
     syncToggle('toggle-music', musicOn);
     syncToggle('toggle-sound', s.sound);
     syncToggle('toggle-dpad', s.showDpad);
     syncToggle('toggle-autofollow', s.autoFollow);
+    syncToggle('toggle-haptics', s.haptics !== false);
   }
 
   function updateHUD() {
@@ -226,6 +278,36 @@
     if (byId('hud-coins')) byId('hud-coins').textContent = coins.toLocaleString();
     if (byId('menu-coins')) byId('menu-coins').textContent = coins.toLocaleString();
     if (byId('shop-coins')) byId('shop-coins').textContent = coins.toLocaleString();
+
+    const caps = VS.Monetization ? VS.Monetization.getCapabilities() : { iap: false, restorePurchases: false };
+    const isPro = Boolean(caps.iap && VS.Storage && VS.Storage.isPro());
+    const proPrice = VS.Monetization ? VS.Monetization.getProductPrice(VS.CONFIG.PRO_PRODUCT_ID, '250 ★') : '250 ★';
+
+    if (byId('hud-pro-badge')) byId('hud-pro-badge').classList.toggle('hidden', !isPro);
+
+    const menuProBtn = byId('btn-menu-pro');
+    if (menuProBtn) {
+      menuProBtn.classList.toggle('hidden', !caps.iap || isPro);
+      const labelEl = byId('btn-menu-pro-label');
+      if (labelEl) labelEl.textContent = `Go Pro • ${proPrice}`;
+    }
+
+    const shopGoProBtn = byId('btn-shop-go-pro');
+    if (shopGoProBtn) {
+      shopGoProBtn.classList.toggle('hidden', !caps.iap || isPro);
+      shopGoProBtn.textContent = `Go Pro • ${proPrice}`;
+    }
+
+    const restoreRow = byId('settings-restore-row');
+    if (restoreRow) {
+      restoreRow.classList.toggle('hidden', !caps.restorePurchases);
+    }
+
+    const proBuyBtn = byId('btn-pro-buy');
+    if (proBuyBtn) {
+      proBuyBtn.disabled = isPro;
+      proBuyBtn.textContent = isPro ? 'Pro Active ✓' : `Unlock Pro • ${proPrice}`;
+    }
 
     updateShopFreeCoinsButton();
     updateMenuStats();
@@ -286,6 +368,10 @@
     }
   }
 
+  function isTouchUiActive() {
+    return Boolean(VS.Platform && typeof VS.Platform.isMobilePlatform === 'function' && VS.Platform.isMobilePlatform());
+  }
+
   function updateDeadlockUI(hasDeadlock) {
     const undoBtn = byId('btn-undo');
     if (undoBtn) {
@@ -293,7 +379,11 @@
     }
     isDeadlockToastActive = Boolean(hasDeadlock);
     if (hasDeadlock) {
-      showTransientToast('Crate stuck in corner! Press Z to Undo', 'amber', 0);
+      showTransientToast(
+        isTouchUiActive() ? 'Crate stuck in corner! Tap Undo' : 'Crate stuck in corner! Press Z to Undo',
+        'amber',
+        0
+      );
     } else if (!transientToastTimer) {
       updateHintVisibility();
     }
@@ -328,8 +418,12 @@
       const text = byId('toast-hint-text');
       if (dot) dot.className = 'w-2 h-2 shrink-0 rounded-full bg-sky-400 animate-pulse';
       if (text) {
-        text.innerHTML =
-          'Use <span class="kbd-pill">W</span><span class="kbd-pill">A</span><span class="kbd-pill">S</span><span class="kbd-pill">D</span> or Arrows to push crates onto glowing goals';
+        if (isTouchUiActive()) {
+          text.textContent = 'Tap tiles or use the D-Pad to push crates onto glowing goals';
+        } else {
+          text.innerHTML =
+            'Use <span class="kbd-pill">W</span><span class="kbd-pill">A</span><span class="kbd-pill">S</span><span class="kbd-pill">D</span> or Arrows to push crates onto glowing goals';
+        }
       }
       toast.classList.remove('hidden');
       toast.classList.remove('opacity-0');
@@ -555,24 +649,46 @@
           const packMeta = VS.Levels.getPackMeta(lockInfo.packId);
           const packName = packMeta ? packMeta.name : 'this pack';
           const totalStars = VS.Storage.getTotalStars();
-          const toastMsg = `Earn ${packMeta ? packMeta.unlockStars : 0}★ (${totalStars}/${packMeta ? packMeta.unlockStars : 0}★) or spend ${packMeta ? packMeta.fallbackCoinPrice : 0} Coins to unlock "${packName}".`;
-          const actionLabel = `Unlock (${packMeta ? packMeta.fallbackCoinPrice : 0} Coins)`;
-          showLevelLockToast(
-            toastMsg,
-            actionLabel,
-            async () => {
-              if (!VS.Monetization) return;
-              const res = await VS.Monetization.purchasePack(lockInfo.packId);
-              if (res && res.ok) {
-                hideLevelLockToast();
-                VS.Game.loadLevel(globalIdx);
-                closeMainMenu();
-                hideModal('modal-levels');
-              } else if (res && res.reason === 'insufficient_coins') {
-                showLevelLockToast(`Need ${res.needed} more coins to unlock ${packName}!`);
+          if (caps.iap) {
+            const packPrice = VS.Monetization
+              ? VS.Monetization.getProductPrice(packMeta && packMeta.productId, (packMeta && packMeta.defaultPrice) || '100 ★')
+              : '';
+            showLevelLockToast(
+              `Earn ${packMeta ? packMeta.unlockStars : 0}★ (${totalStars}/${packMeta ? packMeta.unlockStars : 0}★), spend ${packMeta ? packMeta.fallbackCoinPrice : 0} Coins, or unlock "${packName}" (${packPrice}).`,
+              `Unlock • ${packPrice}`,
+              async () => {
+                if (!VS.Monetization) return;
+                const res = await VS.Monetization.purchasePack(lockInfo.packId);
+                if (res && res.ok) {
+                  hideLevelLockToast();
+                  VS.Game.loadLevel(globalIdx);
+                  closeMainMenu();
+                  hideModal('modal-levels');
+                } else if (res && res.reason !== 'cancelled') {
+                  showLevelLockToast(`Could not complete purchase for ${packName}.`);
+                }
               }
-            }
-          );
+            );
+          } else {
+            const toastMsg = `Earn ${packMeta ? packMeta.unlockStars : 0}★ (${totalStars}/${packMeta ? packMeta.unlockStars : 0}★) or spend ${packMeta ? packMeta.fallbackCoinPrice : 0} Coins to unlock "${packName}".`;
+            const actionLabel = `Unlock (${packMeta ? packMeta.fallbackCoinPrice : 0} Coins)`;
+            showLevelLockToast(
+              toastMsg,
+              actionLabel,
+              async () => {
+                if (!VS.Monetization) return;
+                const res = await VS.Monetization.purchasePack(lockInfo.packId);
+                if (res && res.ok) {
+                  hideLevelLockToast();
+                  VS.Game.loadLevel(globalIdx);
+                  closeMainMenu();
+                  hideModal('modal-levels');
+                } else if (res && res.reason === 'insufficient_coins') {
+                  showLevelLockToast(`Need ${res.needed} more coins to unlock ${packName}!`);
+                }
+              }
+            );
+          }
         } else {
           const needed = lockInfo.missingStars || 1;
           showLevelLockToast(
@@ -714,6 +830,7 @@
     header.querySelector('p').textContent = pack.subtitle;
 
     const actionWrap = header.querySelector('.pack-actions');
+    const caps = VS.Monetization ? VS.Monetization.getCapabilities() : { iap: false };
     if (owned) {
       const badge = global.document.createElement('span');
       badge.className = 'mono text-[10px] font-extrabold px-2.5 py-1 rounded-full bg-emerald-500/20 text-emerald-300 border border-emerald-400/30 inline-block';
@@ -725,6 +842,22 @@
         starPill.className = 'mono text-[10px] font-bold px-2 py-1 rounded-xl bg-slate-800/90 text-amber-300 border border-amber-400/30 inline-block';
         starPill.textContent = `★ ${totalStars}/${pack.unlockStars}`;
         actionWrap.appendChild(starPill);
+      }
+
+      if (caps.iap && VS.Monetization) {
+        const starBuyBtn = global.document.createElement('button');
+        starBuyBtn.type = 'button';
+        starBuyBtn.className = 'game-btn game-btn-primary rounded-xl px-2.5 py-1.5 text-[11px] font-extrabold';
+        starBuyBtn.textContent = `Unlock ${VS.Monetization.getProductPrice(pack.productId, pack.defaultPrice || '100 ★')}`;
+        starBuyBtn.addEventListener('click', async () => {
+          starBuyBtn.disabled = true;
+          const res = await VS.Monetization.purchasePack(pack.id);
+          starBuyBtn.disabled = false;
+          if (res && !res.ok && res.reason !== 'cancelled') {
+            showLevelLockToast(`Could not complete purchase for ${pack.name}.`);
+          }
+        });
+        actionWrap.appendChild(starBuyBtn);
       }
 
       const coinBtn = global.document.createElement('button');
@@ -905,6 +1038,7 @@
 
     items.forEach((item) => {
       const owned = VS.Monetization.isCosmeticOwned(activeShopTab, item.id);
+      const canBuyCoins = VS.Monetization.canBuyCosmeticWithCoins(activeShopTab, item);
       const isTrial = activeTrialId === item.id;
       const isActive = activeId === item.id;
 
@@ -919,7 +1053,9 @@
       } else if (isActive) {
         badgeHtml = '<span class="mono text-[9px] font-extrabold px-1.5 py-0.5 rounded bg-sky-500/20 text-sky-300 border border-sky-400/30">EQUIPPED</span>';
       } else if (item.proExclusive && !owned) {
-        badgeHtml = '<span class="mono text-[9px] font-extrabold px-1.5 py-0.5 rounded bg-amber-500/20 text-amber-300 border border-amber-400/30">ELITE</span>';
+        badgeHtml = caps.iap
+          ? '<span class="mono text-[9px] font-extrabold px-1.5 py-0.5 rounded bg-amber-500/20 text-amber-300 border border-amber-400/30">PRO</span>'
+          : '<span class="mono text-[9px] font-extrabold px-1.5 py-0.5 rounded bg-amber-500/20 text-amber-300 border border-amber-400/30">ELITE</span>';
       } else if (owned) {
         badgeHtml = '<span class="mono text-[9px] font-bold px-1.5 py-0.5 rounded bg-slate-800 text-slate-300 border border-slate-700">OWNED</span>';
       }
@@ -958,7 +1094,7 @@
             setShopStatus(`Equipped "${item.name}"!`, 'text-sky-300');
           });
         }
-      } else {
+      } else if (canBuyCoins) {
         const affordable = coins >= item.price;
         primaryBtn.className = `game-btn ${affordable ? 'game-btn-gold' : ''} rounded-xl py-1.5 px-2 text-[11px] font-extrabold ${affordable ? '' : 'text-amber-300/80'}`;
         primaryBtn.textContent = `Buy • ${item.price} V`;
@@ -970,6 +1106,12 @@
             VS.Sound.playBump();
             setShopStatus(`Need ${res.needed} more coins for "${item.name}".`, 'text-amber-300');
           }
+        });
+      } else {
+        primaryBtn.className = 'game-btn game-btn-gold rounded-xl py-1.5 px-2 text-[11px] font-extrabold';
+        primaryBtn.textContent = 'Unlock with Pro';
+        primaryBtn.addEventListener('click', () => {
+          openProModal();
         });
       }
       btnStack.appendChild(primaryBtn);
@@ -993,6 +1135,15 @@
 
       grid.appendChild(card);
     });
+  }
+
+  function openProModal() {
+    const caps = VS.Monetization ? VS.Monetization.getCapabilities() : { iap: false };
+    if (!caps.iap) return;
+    const statusEl = byId('pro-status');
+    if (statusEl) statusEl.textContent = '';
+    refreshEconomyUI();
+    showModal('modal-pro');
   }
 
   function showWinModal(data) {
@@ -1045,6 +1196,7 @@
     byId('win-par').textContent = data.par;
 
     const coinsText = byId('win-coins-text');
+    const proBadge = byId('win-pro-2x-badge');
     const doubleBtn = byId('btn-win-double');
     const coinsEarned = data.coinsEarned || 0;
     const baseCoinsEarned = data.baseCoinsEarned || 0;
@@ -1060,9 +1212,13 @@
         coinsText.textContent = 'Already mastered • 0 bonus coins';
       }
     }
+    if (proBadge) {
+      proBadge.classList.toggle('hidden', !data.proAutoDoubled);
+    }
 
-    const caps = VS.Monetization ? VS.Monetization.getCapabilities() : { rewardedAds: false };
-    const canDouble = baseCoinsEarned > 0 && caps.rewardedAds;
+    const caps = VS.Monetization ? VS.Monetization.getCapabilities() : { rewardedAds: false, iap: false };
+    const effectivePro = Boolean(caps.iap && VS.Storage.isPro());
+    const canDouble = !effectivePro && baseCoinsEarned > 0 && caps.rewardedAds;
     if (doubleBtn) {
       doubleBtn.classList.toggle('hidden', !canDouble);
       doubleBtn.disabled = false;
@@ -1097,7 +1253,12 @@
     } else if (!data.nextUnlocked && data.nextLockInfo && data.nextLockInfo.reason === 'pack') {
       const packMeta = VS.Levels.getPackMeta(data.nextLockInfo.packId);
       const packName = packMeta ? packMeta.name : 'this pack';
-      unlockMsg.textContent = `Earn ${packMeta ? packMeta.unlockStars : 0}★ (${data.newStars}/${packMeta ? packMeta.unlockStars : 0}★) or spend ${packMeta ? packMeta.fallbackCoinPrice : 0} Coins to unlock "${packName}"!`;
+      const packPrice = packMeta && VS.Monetization
+        ? VS.Monetization.getProductPrice(packMeta.productId, packMeta.defaultPrice || '100 ★')
+        : '';
+      unlockMsg.textContent = caps.iap
+        ? `Earn ${packMeta ? packMeta.unlockStars : 0}★ (${data.newStars}/${packMeta ? packMeta.unlockStars : 0}★), spend ${packMeta ? packMeta.fallbackCoinPrice : 0} Coins, or unlock "${packName}" (${packPrice})!`
+        : `Earn ${packMeta ? packMeta.unlockStars : 0}★ (${data.newStars}/${packMeta ? packMeta.unlockStars : 0}★) or spend ${packMeta ? packMeta.fallbackCoinPrice : 0} Coins to unlock "${packName}"!`;
       unlockMsg.classList.remove('hidden');
     } else if (!data.nextUnlocked) {
       unlockMsg.textContent =
@@ -1220,6 +1381,8 @@
     isModalOpen,
     isAnyModalOpen,
     closeTopModal,
+    syncPlatformBackButton,
+    handlePlatformBack,
     openMainMenu,
     closeMainMenu,
     openSettings,
@@ -1245,6 +1408,7 @@
     setShopTab,
     setShopStatus,
     renderShopGrid,
+    openProModal,
     showWinModal,
     getPendingWinDoubleCoins,
     clearPendingWinDoubleCoins,

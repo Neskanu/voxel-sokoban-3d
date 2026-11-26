@@ -9,6 +9,15 @@
   --accent: #38bdf8;
   --gold: #fbbf24;
   --emerald: #34d399;
+  --tg-safe-top: 0px;
+  --tg-safe-bottom: 0px;
+  --tg-safe-left: 0px;
+  --tg-safe-right: 0px;
+  --safe-top: max(var(--tg-safe-top), env(safe-area-inset-top, 0px));
+  --safe-bottom: max(var(--tg-safe-bottom), env(safe-area-inset-bottom, 0px));
+  --safe-left: max(var(--tg-safe-left), env(safe-area-inset-left, 0px));
+  --safe-right: max(var(--tg-safe-right), env(safe-area-inset-right, 0px));
+  --app-height: 100dvh;
 }
 
 * {
@@ -23,6 +32,7 @@ html, body {
   padding: 0;
   width: 100%;
   height: 100%;
+  height: var(--app-height, 100dvh);
   overflow: hidden;
   background: radial-gradient(circle at 50% 20%, #1e293b 0%, #0f172a 70%, #020617 100%);
   font-family: 'Outfit', system-ui, -apple-system, sans-serif;
@@ -314,7 +324,7 @@ body.intro-active footer {
   animation: introCaptionPop 0.32s ease-out;
 }
 
-/* 9. Keycaps, Deadlock Pulse & Compact CrazyGames Iframe (907x510) */
+/* 9. Keycaps, Deadlock Pulse & Telegram Mini App Safe Areas */
 .kbd-pill {
   display: inline-flex;
   align-items: center;
@@ -349,15 +359,49 @@ body.intro-active footer {
   background: linear-gradient(180deg, rgba(180, 83, 9, 0.92) 0%, rgba(120, 53, 15, 0.96) 100%) !important;
 }
 
-@media (max-height: 600px) {
+header {
+  padding-top: calc(0.625rem + var(--safe-top)) !important;
+  padding-left: calc(0.625rem + var(--safe-left)) !important;
+  padding-right: calc(0.625rem + var(--safe-right)) !important;
+}
+
+footer {
+  padding-bottom: calc(0.75rem + var(--safe-bottom)) !important;
+  padding-left: calc(0.75rem + var(--safe-left)) !important;
+  padding-right: calc(0.75rem + var(--safe-right)) !important;
+}
+
+@media (min-width: 640px) {
   header {
-    padding: 0.4rem 0.65rem !important;
+    padding-top: calc(1rem + var(--safe-top)) !important;
+    padding-left: calc(1rem + var(--safe-left)) !important;
+    padding-right: calc(1rem + var(--safe-right)) !important;
   }
   footer {
-    padding: 0.45rem 0.65rem !important;
+    padding-bottom: calc(1.25rem + var(--safe-bottom)) !important;
+    padding-left: calc(1.25rem + var(--safe-left)) !important;
+    padding-right: calc(1.25rem + var(--safe-right)) !important;
+  }
+}
+
+.modal-backdrop,
+#intro-overlay,
+#screen-loader {
+  padding-top: max(1rem, calc(0.75rem + var(--safe-top)));
+  padding-bottom: max(1rem, calc(0.75rem + var(--safe-bottom)));
+  padding-left: max(1rem, calc(0.75rem + var(--safe-left)));
+  padding-right: max(1rem, calc(0.75rem + var(--safe-right)));
+}
+
+@media (max-height: 600px) {
+  header {
+    padding: calc(0.4rem + var(--safe-top)) calc(0.65rem + var(--safe-right)) 0.4rem calc(0.65rem + var(--safe-left)) !important;
+  }
+  footer {
+    padding: 0.45rem calc(0.65rem + var(--safe-right)) calc(0.45rem + var(--safe-bottom)) calc(0.65rem + var(--safe-left)) !important;
   }
   .modal-card {
-    max-height: 92vh !important;
+    max-height: calc(var(--app-height, 100dvh) - var(--safe-top) - var(--safe-bottom) - 1.5rem) !important;
     padding: 1rem 1.15rem !important;
   }
   .dpad-btn {

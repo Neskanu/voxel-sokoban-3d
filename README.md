@@ -1,21 +1,31 @@
-# Voxel Sokoban 3D
+# Crate Expectations (Voxel Sokoban 3D)
 
-A 3D voxel puzzle diorama built with plain HTML, CSS, and JavaScript using **Three.js**, **Tailwind CSS**, and **Tone.js** — with zero build tools required.
+A 3D voxel puzzle diorama & **Telegram Mini App** built with plain HTML, CSS, and JavaScript using **Three.js**, **Tailwind CSS**, and **Tone.js** — with zero runtime build dependencies.
 
 ## Features
-- **24 Built-in Levels**: 18 Classic warehouse puzzles and 6 Starter levels with star-based progression.
-- **3-Star Par & Scoring System**: Efficiency-based scoring and star ratings saved locally in `localStorage`.
+- **500 Built-in Levels**: Starter (20), Classic (80), and 4 Master Packs (400 puzzles) unlockable via stars, Voxel Coins, or optional Telegram Stars (`XTR`).
+- **Telegram Mini App Native Integration**:
+  - Mobile fullscreen (`requestFullscreen()`) with `safeAreaInset` / `contentSafeAreaInset` handling and expanded desktop layout (`expand()`).
+  - Vertical swipe protection (`disableVerticalSwipes()`), native `BackButton`, `HapticFeedback`, and theme-matched header/background colors.
+  - Chunked `Telegram.WebApp.CloudStorage` sync for cross-device progress persistence.
+  - Optional Telegram Stars (`XTR`) IAP invoice & restore hooks (see [docs/TELEGRAM_SETUP.md](docs/TELEGRAM_SETUP.md)).
+- **3-Star Par & Scoring System**: Efficiency-based scoring, star ratings, and Voxel Shop cosmetics (themes, bot skins, crate styles).
 - **`.xsb` Pack Importer**: Paste standard ASCII Sokoban maps (`#`, `$`, `.`, `@`, `*`, `+`) to load custom levels into 3D.
-- **Multi-Input Controls**: Touchscreen swipe/pinch/D-pad, mouse orbit/pan/click-to-move, and keyboard support.
-- **Procedural Audio**: Web Audio sound effects synthesized in real time via Tone.js.
+- **Multi-Input Controls**: Touchscreen swipe/pinch/tap/D-pad, mouse orbit/pan/click-to-move, and keyboard support.
+- **Procedural Audio & Soundtrack**: Lo-fi BGM + Web Audio sound effects synthesized in real time via Tone.js.
 
-## Running Locally
-- **Direct File**: Open `index.html` directly in any modern browser.
+## Running & Building
 - **Local Static Server**:
   ```bash
   python -m http.server 8080
   ```
-  Then visit `http://localhost:8080`.
+  Visit `http://localhost:8080` (or `http://localhost:8080/?platform=telegram` to test the Telegram adapter).
+- **Production Bundle**:
+  ```bash
+  npm run build
+  ```
+  Verifies JS syntax across `js/` and packages the static site into `dist/web/` and `dist/voxel-sokoban-3d-telegram.zip`.
+- **Telegram Deployment & Stars Backend**: See [docs/TELEGRAM_SETUP.md](docs/TELEGRAM_SETUP.md).
 
 ## Controls
 - **Keyboard**:

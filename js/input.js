@@ -124,7 +124,7 @@
   }
 
   const PREVENT_SCROLL_KEYS = new Set([' ', 'ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight']);
-  const MENU_MODAL_ORDER = ['modal-settings', 'modal-levels', 'modal-shop', 'modal-win', 'modal-menu'];
+  const MENU_MODAL_ORDER = ['modal-settings', 'modal-pro', 'modal-levels', 'modal-shop', 'modal-win', 'modal-menu'];
   let winMenuNavigated = false;
 
   function getActiveMenuModalId() {
@@ -502,6 +502,14 @@
       VS.UI.openShop();
     });
 
+    const menuProBtn = byId('btn-menu-pro');
+    if (menuProBtn) {
+      menuProBtn.addEventListener('click', () => {
+        VS.Sound.unlock();
+        VS.UI.openProModal();
+      });
+    }
+
     byId('btn-menu-levels').addEventListener('click', () => {
       VS.Sound.unlock();
       VS.UI.openLevelSelectForCurrentPack();
@@ -548,12 +556,38 @@
       VS.UI.applySettings();
     });
 
+    const hapticsToggle = byId('toggle-haptics');
+    if (hapticsToggle) {
+      hapticsToggle.addEventListener('click', () => {
+        const s = VS.Storage.getSettings();
+        const next = s.haptics === false;
+        VS.Storage.updateSetting('haptics', next);
+        VS.UI.applySettings();
+        if (next && VS.Platform && VS.Platform.haptic) {
+          VS.Platform.haptic('select');
+        }
+      });
+    }
+
     byId('btn-replay-intro').addEventListener('click', () => {
       VS.Sound.unlock();
       if (VS.Intro) {
         VS.Intro.play({ restoreLevelIndex: VS.Game.state.levelIndex });
       }
     });
+
+    const restoreBtn = byId('btn-restore-purchases');
+    if (restoreBtn) {
+      restoreBtn.addEventListener('click', async () => {
+        VS.Sound.unlock();
+        const statusEl = byId('restore-status');
+        if (!VS.Monetization) return;
+        const res = await VS.Monetization.restorePurchases();
+        if (statusEl) {
+          statusEl.textContent = res.ok ? 'Purchases restored!' : 'No previous purchases found.';
+        }
+      });
+    }
 
     byId('btn-intro-skip').addEventListener('click', () => {
       VS.Sound.unlock();
@@ -586,6 +620,13 @@
     byId('shop-tab-themes').addEventListener('click', () => VS.UI.setShopTab('themes'));
     byId('shop-tab-bots').addEventListener('click', () => VS.UI.setShopTab('bots'));
     byId('shop-tab-crates').addEventListener('click', () => VS.UI.setShopTab('crates'));
+    const shopGoProBtn = byId('btn-shop-go-pro');
+    if (shopGoProBtn) {
+      shopGoProBtn.addEventListener('click', () => {
+        VS.Sound.unlock();
+        VS.UI.openProModal();
+      });
+    }
     byId('btn-shop-free-coins').addEventListener('click', async () => {
       VS.Sound.unlock();
       if (!VS.Monetization) return;
@@ -603,8 +644,49 @@
       }
     });
 
+    // --- Pro Modal ---
+    const closeProBtn = byId('btn-close-pro');
+    if (closeProBtn) {
+      closeProBtn.addEventListener('click', () => VS.UI.hideModal('modal-pro'));
+    }
+    const proBuyBtn = byId('btn-pro-buy');
+    if (proBuyBtn) {
+      proBuyBtn.addEventListener('click', async () => {
+        VS.Sound.unlock();
+        if (!VS.Monetization) return;
+        const statusEl = byId('pro-status');
+        proBuyBtn.disabled = true;
+        if (statusEl) statusEl.textContent = 'Opening Telegram Stars invoice...';
+        const res = await VS.Monetization.purchasePro();
+        proBuyBtn.disabled = Boolean(VS.Storage && VS.Storage.isPro());
+        if (statusEl) {
+          if (res.ok) {
+            statusEl.textContent = res.bonusGranted
+              ? `Pro unlocked! +${res.bonusGranted} welcome coins added.`
+              : 'Crate Expectations Pro is active!';
+          } else if (res.reason === 'cancelled') {
+            statusEl.textContent = 'Purchase cancelled.';
+          } else {
+            statusEl.textContent = 'Purchase did not complete — try again.';
+          }
+        }
+      });
+    }
+    const proRestoreBtn = byId('btn-pro-restore');
+    if (proRestoreBtn) {
+      proRestoreBtn.addEventListener('click', async () => {
+        VS.Sound.unlock();
+        if (!VS.Monetization) return;
+        const statusEl = byId('pro-status');
+        const res = await VS.Monetization.restorePurchases();
+        if (statusEl) {
+          statusEl.textContent = res.ok ? 'Purchases restored!' : 'No previous purchases found.';
+        }
+      });
+    }
+
     // --- Backdrop Click-to-Close on Secondary Modals ---
-    ['modal-levels', 'modal-settings', 'modal-shop'].forEach((modalId) => {
+    ['modal-levels', 'modal-settings', 'modal-shop', 'modal-pro'].forEach((modalId) => {
       const backdrop = byId(modalId);
       if (!backdrop) return;
       backdrop.addEventListener('click', (e) => {
@@ -688,6 +770,14 @@
     setupPointerAndCanvasControls(VS.Renderer.getDomElement());
     setupKeyboardControls();
     setupButtonControls();
+    if (
+      VS.Platform &&
+      typeof VS.Platform.setBackHandler === 'function' &&
+      VS.UI &&
+      typeof VS.UI.handlePlatformBack === 'function'
+    ) {
+      VS.Platform.setBackHandler(VS.UI.handlePlatformBack);
+    }
   }
 
   VS.Input = {

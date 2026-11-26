@@ -168,8 +168,9 @@
     }
     state.deadlockedCrateIds = next;
     const hasDeadlock = next.size > 0;
-    if (hasDeadlock && next.size > prevSize && triggerSound && VS.Sound && VS.Sound.playDeadlock) {
-      VS.Sound.playDeadlock();
+    if (hasDeadlock && next.size > prevSize && triggerSound) {
+      if (VS.Sound && VS.Sound.playDeadlock) VS.Sound.playDeadlock();
+      if (VS.Platform && VS.Platform.haptic) VS.Platform.haptic('deadlock');
     }
     if (VS.UI && VS.UI.updateDeadlockUI) {
       VS.UI.updateDeadlockUI(hasDeadlock);
@@ -354,7 +355,13 @@
     if (!solved.found || !solved.push) {
       if (VS.Sound && VS.Sound.playDeadlock) VS.Sound.playDeadlock();
       if (VS.UI && VS.UI.showTransientToast) {
-        VS.UI.showTransientToast('No valid push from here — press Z to Undo or R to Reset!', 'amber');
+        const isTouch = Boolean(VS.Platform && VS.Platform.isMobilePlatform && VS.Platform.isMobilePlatform());
+        VS.UI.showTransientToast(
+          isTouch
+            ? 'No valid push from here — tap Undo or Reset!'
+            : 'No valid push from here — press Z to Undo or R to Reset!',
+          'amber'
+        );
       }
       return { ok: false, reason: 'unsolvable' };
     }
@@ -487,6 +494,7 @@
     if (state.walls.has(nextKey) || !state.floors.has(nextKey)) {
       triggerBump(dx, dy);
       VS.Sound.playBump();
+      if (VS.Platform && VS.Platform.haptic) VS.Platform.haptic('bump');
       return;
     }
 
@@ -499,6 +507,7 @@
       if (state.walls.has(crateKey) || !state.floors.has(crateKey) || getCrateAt(cx, cy)) {
         triggerBump(dx, dy);
         VS.Sound.playBump();
+        if (VS.Platform && VS.Platform.haptic) VS.Platform.haptic('bump');
         return;
       }
 
@@ -518,17 +527,20 @@
       const pushColor = crateSkin ? crateSkin.pushParticleColor : 0xfbbf24;
       if (state.goals.has(crateKey)) {
         VS.Sound.playGoalLock();
+        if (VS.Platform && VS.Platform.haptic) VS.Platform.haptic('goal');
         VS.Renderer.spawnParticles(destWorld.x, 0.5, destWorld.z, lockColor, 14, 0.09);
         if (VS.Renderer.spawnGoalShockwave) {
           VS.Renderer.spawnGoalShockwave(destWorld.x, destWorld.z, lockColor);
         }
       } else {
         VS.Sound.playPush();
+        if (VS.Platform && VS.Platform.haptic) VS.Platform.haptic('push');
         VS.Renderer.spawnParticles(destWorld.x, 0.15, destWorld.z, pushColor, 5, 0.05);
       }
     } else {
       pushHistory(null);
       VS.Sound.playStep();
+      if (VS.Platform && VS.Platform.haptic) VS.Platform.haptic('step');
       const prevWorld = VS.Renderer.gridToWorld(state.player.x, state.player.y);
       VS.Renderer.spawnParticles(prevWorld.x, 0.08, prevWorld.z, 0x94a3b8, 3, 0.03);
     }
@@ -599,6 +611,7 @@
     state.activeHint = null;
     if (VS.Renderer && VS.Renderer.clearGuideArrow) VS.Renderer.clearGuideArrow();
     VS.Sound.playUndo();
+    if (VS.Platform && VS.Platform.haptic) VS.Platform.haptic('undo');
     updateCrateVisuals();
     refreshDeadlocks(false);
     VS.UI.updateHUD();
@@ -613,6 +626,8 @@
     const trialInfo = VS.Monetization ? VS.Monetization.onLevelWon() : null;
     if (winStats.stars === 3 && VS.Platform) {
       VS.Platform.happyTime();
+    } else if (VS.Platform && VS.Platform.haptic) {
+      VS.Platform.haptic('win');
     }
     VS.UI.updateMenuStats();
     VS.Sound.playWin();

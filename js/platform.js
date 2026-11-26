@@ -13,8 +13,8 @@
 
   const adapters = new Map();
   let activeAdapter = null;
+  let backHandler = null;
 
-  const CRAZYGAMES_HOST_RE = /(^|\.)(crazygames|crazygames-cdn|crazygamesx|1001juegos|speelspelletjes)\./i;
   const LOCAL_HOST_SET = new Set(['localhost', '127.0.0.1', '::1', '0.0.0.0', '[::1]']);
 
   function getSearchParams() {
@@ -42,52 +42,36 @@
     return isLocalOrFileHost();
   }
 
-  function hasCrazyGamesAncestor() {
-    try {
-      const origins = global.location && global.location.ancestorOrigins;
-      if (origins && origins.length) {
-        for (let i = 0; i < origins.length; i++) {
-          if (CRAZYGAMES_HOST_RE.test(String(origins[i] || ''))) {
-            return true;
-          }
-        }
-      }
-    } catch (e) {}
-    return false;
-  }
-
-  function isCrazyGamesEnvironment() {
+  function isTelegramEnvironment() {
     const params = getSearchParams();
     if (params) {
       const p = params.get('platform') || params.get('adapter');
-      if (p === 'crazygames') return true;
-      if (params.get('useLocalSdk') === 'true') return true;
+      if (p === 'telegram') return true;
     }
-    if (global.location && CRAZYGAMES_HOST_RE.test(String(global.location.hostname || ''))) {
-      return true;
-    }
-    if (hasCrazyGamesAncestor()) {
-      return true;
-    }
+
     try {
-      if (
-        !isLocalOrFileHost() &&
-        global.document &&
-        typeof global.document.referrer === 'string' &&
-        CRAZYGAMES_HOST_RE.test(global.document.referrer)
-      ) {
+      const hash = global.location && typeof global.location.hash === 'string' ? global.location.hash : '';
+      const search = global.location && typeof global.location.search === 'string' ? global.location.search : '';
+      const queryBlob = `${search}&${hash}`;
+      if (/(?:^|[?&#])tgWebApp(?:Data|Platform|Version)=/i.test(queryBlob)) {
         return true;
       }
     } catch (e) {}
-    if (global.CrazyGames && global.CrazyGames.SDK) {
-      const env = global.CrazyGames.SDK.environment;
-      if (env === 'crazygames' || env === 'local') {
+
+    const tg = global.Telegram && global.Telegram.WebApp;
+    if (tg) {
+      if (typeof tg.initData === 'string' && tg.initData.length > 0) {
         return true;
       }
-      if (!isLocalOrFileHost() && env !== 'disabled') {
+      const unsafe = tg.initDataUnsafe;
+      if (unsafe && (unsafe.user || unsafe.query_id || unsafe.chat_instance)) {
+        return true;
+      }
+      if (typeof tg.platform === 'string' && tg.platform !== '' && tg.platform !== 'unknown') {
         return true;
       }
     }
+
     return false;
   }
 
@@ -107,8 +91,8 @@
       return global.VOXEL_SOKOBAN_ADAPTER;
     }
 
-    if (isCrazyGamesEnvironment() && adapters.has('crazygames')) {
-      return 'crazygames';
+    if (isTelegramEnvironment() && adapters.has('telegram')) {
+      return 'telegram';
     }
 
     const fallbackId = preferredId || (VS.CONFIG && VS.CONFIG.ADAPTER) || 'mock';
@@ -122,6 +106,11 @@
   async function init(preferredId) {
     const chosenId = resolveAdapterId(preferredId);
     activeAdapter = chosenId ? adapters.get(chosenId) : null;
+    if (activeAdapter && typeof activeAdapter.setBackHandler === 'function' && backHandler) {
+      try {
+        activeAdapter.setBackHandler(backHandler);
+      } catch (e) {}
+    }
     if (activeAdapter && typeof activeAdapter.init === 'function') {
       try {
         await activeAdapter.init();
@@ -147,8 +136,69 @@
     return Object.assign({}, DEFAULT_CAPABILITIES, activeAdapter.capabilities);
   }
 
-  function isCrazyGamesMode() {
-    return getAdapterId() === 'crazygames';
+  function isTelegramMode() {
+    return getAdapterId() === 'telegram';
+  }
+
+  function isMobilePlatform() {
+    if (activeAdapter && typeof activeAdapter.isMobilePlatform === 'function') {
+      try {
+        return Boolean(activeAdapter.isMobilePlatform());
+      } catch (e) {}
+    }
+    try {
+      if (global.matchMedia && global.matchMedia('(pointer: coarse)').matches) return true;
+      if (global.navigator && global.navigator.maxTouchPoints > 0 && (global.innerWidth || 1200) <= 1024) {
+        return true;
+      }
+    } catch (e) {}
+    return false;
+  }
+
+  function haptic(type) {
+    if (VS.Storage && typeof VS.Storage.getSettings === 'function') {
+      const settings = VS.Storage.getSettings();
+      if (settings && settings.haptics === false) return;
+    }
+    if (activeAdapter && typeof activeAdapter.haptic === 'function') {
+      try {
+        activeAdapter.haptic(type);
+      } catch (e) {}
+    }
+  }
+
+  function setThemeColor(headerHex, bgHex) {
+    if (activeAdapter && typeof activeAdapter.setThemeColor === 'function') {
+      try {
+        activeAdapter.setThemeColor(headerHex, bgHex);
+      } catch (e) {}
+    }
+  }
+
+  function syncNavigation(canGoBack) {
+    if (activeAdapter && typeof activeAdapter.syncNavigation === 'function') {
+      try {
+        activeAdapter.syncNavigation(Boolean(canGoBack));
+      } catch (e) {}
+    }
+  }
+
+  function setBackHandler(fn) {
+    backHandler = typeof fn === 'function' ? fn : null;
+    if (activeAdapter && typeof activeAdapter.setBackHandler === 'function') {
+      try {
+        activeAdapter.setBackHandler(backHandler);
+      } catch (e) {}
+    }
+  }
+
+  function getUserInfo() {
+    if (activeAdapter && typeof activeAdapter.getUserInfo === 'function') {
+      try {
+        return activeAdapter.getUserInfo();
+      } catch (e) {}
+    }
+    return null;
   }
 
   function loadingStart() {
@@ -307,8 +357,14 @@
     getAdapterId,
     getCapabilities,
     isDevEnvironment,
-    isCrazyGamesEnvironment,
-    isCrazyGamesMode,
+    isTelegramEnvironment,
+    isTelegramMode,
+    isMobilePlatform,
+    haptic,
+    setThemeColor,
+    syncNavigation,
+    setBackHandler,
+    getUserInfo,
     loadingStart,
     loadingStop,
     gameplayStart,

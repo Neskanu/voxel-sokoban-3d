@@ -7,10 +7,9 @@ const { execFileSync } = require('child_process');
 const ROOT = path.resolve(__dirname, '..');
 const DIST_DIR = path.join(ROOT, 'dist');
 const WEB_DIR = path.join(DIST_DIR, 'web');
-const ZIP_PATH = path.join(DIST_DIR, 'voxel-sokoban-3d-crazygames.zip');
+const ZIP_PATH = path.join(DIST_DIR, 'voxel-sokoban-3d-telegram.zip');
 
-const CRAZYGAMES_INITIAL_LIMIT_BYTES = 50 * 1024 * 1024;
-const CRAZYGAMES_TOTAL_LIMIT_BYTES = 250 * 1024 * 1024;
+const BUNDLE_WARN_BYTES = 50 * 1024 * 1024;
 
 function walkFiles(dir) {
   const results = [];
@@ -67,7 +66,7 @@ function main() {
     copyTree(path.join(ROOT, 'assets'), path.join(WEB_DIR, 'assets'));
   }
 
-  // 3. Create zip package for CrazyGames upload
+  // 3. Create zip package for Telegram Mini App hosting upload
   if (process.platform === 'win32') {
     execFileSync(
       'powershell.exe',
@@ -83,7 +82,7 @@ function main() {
     execFileSync('zip', ['-rq', ZIP_PATH, '.'], { cwd: WEB_DIR, stdio: 'pipe' });
   }
 
-  // 4. Measure bundle sizes (all dist/web files are initial-load static assets)
+  // 4. Measure bundle sizes
   const bundleFiles = walkFiles(WEB_DIR);
   let totalBytes = 0;
   console.log('\nProduction bundle contents:');
@@ -95,18 +94,15 @@ function main() {
   });
 
   const zipBytes = fs.statSync(ZIP_PATH).size;
-  const initialBytes = totalBytes;
 
-  console.log('\nCrazyGames Bundle Metrics:');
-  console.log(`  Initial Load Size (local assets): ${formatSize(initialBytes)} (${initialBytes} B) / 50.00 MB limit`);
-  console.log(`  Total Bundle Size (uncompressed): ${formatSize(totalBytes)} (${totalBytes} B) / 250.00 MB limit`);
+  console.log('\nTelegram Mini App Bundle Metrics:');
+  console.log(`  Total Bundle Size (uncompressed): ${formatSize(totalBytes)} (${totalBytes} B)`);
   console.log(`  Upload ZIP Size:                  ${formatSize(zipBytes)} (${zipBytes} B)`);
 
-  if (initialBytes > CRAZYGAMES_INITIAL_LIMIT_BYTES || totalBytes > CRAZYGAMES_TOTAL_LIMIT_BYTES) {
-    console.error('ERROR: Bundle exceeds CrazyGames size limits.');
-    process.exit(1);
+  if (totalBytes > BUNDLE_WARN_BYTES) {
+    console.warn(`WARN: Bundle exceeds ${formatSize(BUNDLE_WARN_BYTES)} target.`);
   }
-  console.log('PASS: Production bundle is well within CrazyGames limits.');
+  console.log('PASS: Production Telegram Mini App bundle built in dist/web.');
 }
 
 main();

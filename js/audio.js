@@ -77,16 +77,37 @@
       }
     }
 
+    resumeContextIfNeeded() {
+      if (
+        this.initialized &&
+        this.unlocked &&
+        !this.adMuted &&
+        !this.platformMuted &&
+        !this.tabHidden &&
+        global.Tone &&
+        global.Tone.context &&
+        global.Tone.context.state !== 'running' &&
+        typeof global.Tone.context.resume === 'function'
+      ) {
+        try {
+          const p = global.Tone.context.resume();
+          if (p && typeof p.catch === 'function') p.catch(() => {});
+        } catch (e) {}
+      }
+    }
+
     syncMute() {
       if (this.initialized && typeof global.Tone !== 'undefined' && global.Tone.Destination) {
         global.Tone.Destination.mute = this.adMuted || this.platformMuted || this.tabHidden || !this.enabled;
       }
+      this.resumeContextIfNeeded();
       this.syncMusic();
     }
 
     async unlock() {
       this.unlocked = true;
       this.initBgmElement();
+      this.resumeContextIfNeeded();
       this.syncMusic();
 
       if (this.initialized || typeof global.Tone === 'undefined') return;

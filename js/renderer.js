@@ -988,6 +988,7 @@
 
   VS.Renderer = {
     init,
+    onWindowResize,
     getDomElement,
     gridToWorld,
     computeCameraDistance,

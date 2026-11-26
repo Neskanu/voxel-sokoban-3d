@@ -27,9 +27,50 @@
     INTERSTITIAL_GRACE_CLEARS: 3,
     INTERSTITIAL_LEVEL_INTERVAL: 3,
     INTERSTITIAL_COOLDOWN_SEC: 120,
-    CG_INTERSTITIAL_GRACE_CLEARS: 1,
-    CG_INTERSTITIAL_LEVEL_INTERVAL: 2,
-    CG_INTERSTITIAL_COOLDOWN_SEC: 0,
-    PRO_PRODUCT_ID: 'pro_unlock'
+    PRO_PRODUCT_ID: 'pro_unlock',
+    TELEGRAM_API_BASE: '',
+    TELEGRAM_CREATE_INVOICE_PATH: '/api/telegram/create-invoice',
+    TELEGRAM_ENTITLEMENTS_PATH: '/api/telegram/entitlements',
+    TELEGRAM_PRODUCTS: Object.freeze([
+      Object.freeze({
+        id: 'pro_unlock',
+        title: 'Crate Expectations Pro',
+        description: 'All 400 master levels, Pro cosmetics, 2x win coins & +500 bonus coins.',
+        stars: 250,
+        price: '250 ★'
+      }),
+      Object.freeze({
+        id: 'pack_neon_vault',
+        packId: 'neon-vault',
+        title: 'Neon Vault Pack',
+        description: '100 tactical cyber-warehouse puzzles.',
+        stars: 100,
+        price: '100 ★'
+      }),
+      Object.freeze({
+        id: 'pack_frost_citadel',
+        packId: 'frost-citadel',
+        title: 'Frost Citadel Pack',
+        description: '100 precision ice-corridor challenges.',
+        stars: 125,
+        price: '125 ★'
+      }),
+      Object.freeze({
+        id: 'pack_sandstone_labyrinth',
+        packId: 'sandstone-labyrinth',
+        title: 'Sandstone Labyrinth Pack',
+        description: '100 tight desert-temple puzzle vaults.',
+        stars: 150,
+        price: '150 ★'
+      }),
+      Object.freeze({
+        id: 'pack_grandmaster',
+        packId: 'grandmaster',
+        title: 'Grandmaster Pack',
+        description: '100 deep multi-stage logic chambers.',
+        stars: 175,
+        price: '175 ★'
+      })
+    ])
   });
 })(window);

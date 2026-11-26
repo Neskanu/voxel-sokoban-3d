@@ -12,6 +12,8 @@
       proExclusive: false,
       swatches: ['#334155', '#64748b', '#38bdf8'],
       bgGradient: 'radial-gradient(circle at 50% 20%, #1e293b 0%, #0f172a 70%, #020617 100%)',
+      tgHeaderColor: '#0f172a',
+      tgBgColor: '#020617',
       lighting: {
         hemiSky: 0xe0f2fe,
         hemiGround: 0x1e293b,
@@ -41,6 +43,8 @@
       proExclusive: false,
       swatches: ['#1e1b4b', '#ec4899', '#22d3ee'],
       bgGradient: 'radial-gradient(circle at 50% 20%, #311042 0%, #0f0722 65%, #03010a 100%)',
+      tgHeaderColor: '#0f0722',
+      tgBgColor: '#03010a',
       lighting: {
         hemiSky: 0xc084fc,
         hemiGround: 0x090d16,
@@ -70,6 +74,8 @@
       proExclusive: false,
       swatches: ['#d97706', '#f59e0b', '#14b8a6'],
       bgGradient: 'radial-gradient(circle at 50% 20%, #451a03 0%, #271206 68%, #0f0703 100%)',
+      tgHeaderColor: '#271206',
+      tgBgColor: '#0f0703',
       lighting: {
         hemiSky: 0xfef3c7,
         hemiGround: 0x451a03,
@@ -99,6 +105,8 @@
       proExclusive: false,
       swatches: ['#bae6fd', '#60a5fa', '#2dd4bf'],
       bgGradient: 'radial-gradient(circle at 50% 20%, #164e63 0%, #0c2438 68%, #020814 100%)',
+      tgHeaderColor: '#0c2438',
+      tgBgColor: '#020814',
       lighting: {
         hemiSky: 0xe0f2fe,
         hemiGround: 0x0f172a,
@@ -128,6 +136,8 @@
       proExclusive: false,
       swatches: ['#57534e', '#f472b6', '#fbcfe8'],
       bgGradient: 'radial-gradient(circle at 50% 20%, #4a1d3a 0%, #1f1224 68%, #09050d 100%)',
+      tgHeaderColor: '#1f1224',
+      tgBgColor: '#09050d',
       lighting: {
         hemiSky: 0xfce7f3,
         hemiGround: 0x291822,
@@ -157,6 +167,8 @@
       proExclusive: true,
       swatches: ['#18181b', '#fbbf24', '#34d399'],
       bgGradient: 'radial-gradient(circle at 50% 20%, #2e2410 0%, #111116 68%, #030305 100%)',
+      tgHeaderColor: '#111116',
+      tgBgColor: '#030305',
       lighting: {
         hemiSky: 0xfef3c7,
         hemiGround: 0x09090b,
@@ -457,6 +469,10 @@
       if (rebuildPlayer && bot && VS.Renderer.refreshPlayerMesh) {
         VS.Renderer.refreshPlayerMesh(bot.accessory);
       }
+    }
+
+    if (theme && VS.Platform && typeof VS.Platform.setThemeColor === 'function') {
+      VS.Platform.setThemeColor(theme.tgHeaderColor, theme.tgBgColor);
     }
 
     if (typeof global.__renderVoxelWordmarks === 'function') {

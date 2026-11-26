@@ -36,6 +36,19 @@
         if (p && p.id) products[p.id] = p;
       });
     }
+    if (
+      getCapabilities().restorePurchases &&
+      VS.Platform &&
+      typeof VS.Platform.isTelegramMode === 'function' &&
+      VS.Platform.isTelegramMode()
+    ) {
+      try {
+        const restored = await VS.Platform.restorePurchases();
+        if (restored && restored.restored && Array.isArray(restored.entitlements) && restored.entitlements.length) {
+          applyEntitlements(restored.entitlements);
+        }
+      } catch (e) {}
+    }
     if (VS.Storage && VS.Storage.isPro() && getCapabilities().iap) {
       applyEntitlements([CONFIG.PRO_PRODUCT_ID]);
     }
@@ -49,7 +62,7 @@
     return products[productId] || null;
   }
 
-  function getProductPrice(productId, fallback = '$4.99') {
+  function getProductPrice(productId, fallback = '250 ★') {
     const p = products[productId];
     return (p && p.price) || fallback;
   }
@@ -288,10 +301,9 @@
     if (!getCapabilities().interstitialAds) {
       return { show: false, reason: 'unsupported' };
     }
-    const isCG = Boolean(VS.Platform && typeof VS.Platform.isCrazyGamesMode === 'function' && VS.Platform.isCrazyGamesMode());
-    const graceClears = isCG ? CONFIG.CG_INTERSTITIAL_GRACE_CLEARS : CONFIG.INTERSTITIAL_GRACE_CLEARS;
-    const levelInterval = isCG ? CONFIG.CG_INTERSTITIAL_LEVEL_INTERVAL : CONFIG.INTERSTITIAL_LEVEL_INTERVAL;
-    const cooldownSec = isCG ? CONFIG.CG_INTERSTITIAL_COOLDOWN_SEC : CONFIG.INTERSTITIAL_COOLDOWN_SEC;
+    const graceClears = CONFIG.INTERSTITIAL_GRACE_CLEARS;
+    const levelInterval = CONFIG.INTERSTITIAL_LEVEL_INTERVAL;
+    const cooldownSec = CONFIG.INTERSTITIAL_COOLDOWN_SEC;
 
     if (VS.Storage && VS.Storage.getTotalClears() <= graceClears) {
       return { show: false, reason: 'grace_period' };
